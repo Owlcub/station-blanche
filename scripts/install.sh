@@ -145,7 +145,7 @@ if [ "$INSTALL_MODE" = "1" ]; then
     # Personnaliser l'écran de connexion avec le logo Owlcub
     echo "Personnalisation de l'écran de connexion..."
     if [ -f "/opt/station-blanche/scripts/customize-login-screen.sh" ]; then
-        /opt/station-blanche/scripts/customize-login-screen.sh
+        echo "Y" | /opt/station-blanche/scripts/customize-login-screen.sh
     fi
 
     echo ""
