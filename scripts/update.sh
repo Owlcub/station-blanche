@@ -94,13 +94,21 @@ if [ -d "/opt/station-blanche" ]; then
         sleep 5
         if [ "$IS_ROOT" = true ]; then
             reboot
-        else
+        elif command -v sudo &> /dev/null; then
             sudo reboot
+        else
+            echo "⚠️  sudo non disponible. Exécutez manuellement :"
+            echo "  su -c reboot"
+            exit 1
         fi
     else
         echo ""
         echo "Pour redémarrer plus tard, exécutez :"
-        echo "  sudo reboot"
+        if command -v sudo &> /dev/null; then
+            echo "  sudo reboot"
+        else
+            echo "  su -c reboot"
+        fi
         echo ""
     fi
 fi
