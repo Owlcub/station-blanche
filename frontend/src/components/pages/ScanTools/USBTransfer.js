@@ -13,6 +13,13 @@ const USBTransfer = () => {
   const [transferHistory, setTransferHistory] = useState([]);
   const [scanBeforeTransfer, setScanBeforeTransfer] = useState(true);
 
+  // Nouveau: sélection de fichiers
+  const [showFileBrowser, setShowFileBrowser] = useState(false);
+  const [browserItems, setBrowserItems] = useState([]);
+  const [currentPath, setCurrentPath] = useState('');
+  const [selectedPaths, setSelectedPaths] = useState([]);
+  const [loadingBrowser, setLoadingBrowser] = useState(false);
+
   useEffect(() => {
     detectUSB();
     loadHistory();
@@ -46,6 +53,44 @@ const USBTransfer = () => {
     }
   };
 
+  const browseSource = async (path = '') => {
+    if (!sourceDevice) return;
+
+    setLoadingBrowser(true);
+    try {
+      const response = await fetch(`${API_URL}/api/usb/transfer/browse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          device: sourceDevice.device,
+          path
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setBrowserItems(data.items);
+        setCurrentPath(data.path);
+        setShowFileBrowser(true);
+      }
+    } catch (error) {
+      console.error('Erreur navigation:', error);
+    } finally {
+      setLoadingBrowser(false);
+    }
+  };
+
+  const toggleSelectItem = (item) => {
+    setSelectedPaths(prev => {
+      const exists = prev.find(p => p === item.path);
+      if (exists) {
+        return prev.filter(p => p !== item.path);
+      } else {
+        return [...prev, item.path];
+      }
+    });
+  };
+
   const startTransfer = async () => {
     if (!sourceDevice || !destDevice) {
       alert('Veuillez sélectionner une clé source et une clé destination');
@@ -57,7 +102,11 @@ const USBTransfer = () => {
       return;
     }
 
-    if (!window.confirm(`Transférer les données de ${sourceDevice.name} vers ${destDevice.name} ?\n\nATTENTION: Les données existantes sur ${destDevice.name} seront conservées.`)) {
+    const transferMsg = selectedPaths.length > 0
+      ? `Transférer ${selectedPaths.length} élément(s) sélectionné(s) de ${sourceDevice.name} vers ${destDevice.name} ?`
+      : `Transférer TOUT le contenu de ${sourceDevice.name} vers ${destDevice.name} ?`;
+
+    if (!window.confirm(`${transferMsg}\n\nATTENTION: Les données existantes sur ${destDevice.name} seront conservées.`)) {
       return;
     }
 
@@ -71,6 +120,7 @@ const USBTransfer = () => {
         body: JSON.stringify({
           source: sourceDevice.device,
           destination: destDevice.device,
+          selectedPaths: selectedPaths,
           options: {
             scan_before_transfer: scanBeforeTransfer
           }
@@ -86,7 +136,9 @@ const USBTransfer = () => {
           files_transferred: data.files_transferred,
           integrity_ok: data.integrity_ok
         });
-        loadHistory(); // Recharger l'historique
+        loadHistory();
+        setSelectedPaths([]); // Reset sélection
+        setShowFileBrowser(false);
       } else {
         setTransferResult({
           success: false,
@@ -135,7 +187,11 @@ const USBTransfer = () => {
                     <div
                       key={index}
                       className={`device-card ${sourceDevice?.device === device.device ? 'selected' : ''}`}
-                      onClick={() => setSourceDevice(device)}
+                      onClick={() => {
+                        setSourceDevice(device);
+                        setSelectedPaths([]);
+                        setShowFileBrowser(false);
+                      }}
                     >
                       <Usb size={24} />
                       <div className="device-info">
@@ -148,6 +204,16 @@ const USBTransfer = () => {
                     </div>
                   ))}
                 </div>
+                {sourceDevice && (
+                  <Button
+                    onClick={() => browseSource('')}
+                    disabled={loadingBrowser}
+                    size="sm"
+                    style={{ marginTop: '10px', width: '100%' }}
+                  >
+                    📁 Choisir fichiers/dossiers ({selectedPaths.length} sélectionné{selectedPaths.length > 1 ? 's' : ''})
+                  </Button>
+                )}
               </div>
 
               <div className="transfer-arrow">
@@ -177,6 +243,58 @@ const USBTransfer = () => {
               </div>
             </div>
 
+            {showFileBrowser && (
+              <div className="file-browser">
+                <div className="file-browser-header">
+                  <h3>📂 Parcourir: {sourceDevice.name}</h3>
+                  <button onClick={() => setShowFileBrowser(false)} className="close-btn">✕</button>
+                </div>
+                <div className="current-path">
+                  <span>Chemin: /{currentPath || 'racine'}</span>
+                  {currentPath && (
+                    <button onClick={() => {
+                      const parentPath = currentPath.split('/').slice(0, -1).join('/');
+                      browseSource(parentPath);
+                    }}>⬆️ Dossier parent</button>
+                  )}
+                </div>
+                {loadingBrowser ? (
+                  <Loading text="Chargement..." />
+                ) : (
+                  <div className="file-list">
+                    {browserItems.map((item, idx) => (
+                      <div key={idx} className="file-item">
+                        <input
+                          type="checkbox"
+                          checked={selectedPaths.includes(item.path)}
+                          onChange={() => toggleSelectItem(item)}
+                        />
+                        {item.type === 'directory' ? (
+                          <span
+                            className="file-name folder"
+                            onClick={() => browseSource(item.path)}
+                          >
+                            📁 {item.name}
+                          </span>
+                        ) : (
+                          <span className="file-name">
+                            📄 {item.name}
+                          </span>
+                        )}
+                        <span className="file-size">{item.size}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="file-browser-footer">
+                  <span>{selectedPaths.length} élément(s) sélectionné(s)</span>
+                  <Button onClick={() => setShowFileBrowser(false)} size="sm">
+                    Valider la sélection
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="transfer-action">
               <Button
                 icon={Play}
@@ -185,7 +303,7 @@ const USBTransfer = () => {
                 loading={transferring}
                 size="lg"
               >
-                {transferring ? 'Transfert en cours...' : 'Démarrer le transfert'}
+                {transferring ? 'Transfert en cours...' : selectedPaths.length > 0 ? `Transférer ${selectedPaths.length} élément(s)` : 'Transférer TOUT le contenu'}
               </Button>
             </div>
 

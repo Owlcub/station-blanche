@@ -403,10 +403,80 @@ app.get('/api/usb/transfer/list', async (req, res) => {
     }
 });
 
+// Lister le contenu d'un USB (pour sélection de fichiers)
+app.post('/api/usb/transfer/browse', async (req, res) => {
+    try {
+        const { device, path: browsePath = '' } = req.body;
+
+        if (!device) {
+            return res.status(400).json({ error: 'Device requis' });
+        }
+
+        const mountId = `browse_${Date.now()}`;
+        const mountPoint = `/tmp/browse_${mountId}`;
+
+        // Créer et monter temporairement
+        await execPromise(`mkdir -p ${mountPoint}`);
+        await execPromise(`mount -o ro ${device} ${mountPoint}`).catch(e =>
+            execPromise(`mount -o ro ${device}1 ${mountPoint}`)
+        );
+
+        // Lister le contenu du chemin demandé
+        const fullPath = path.join(mountPoint, browsePath);
+        const { stdout: lsOutput } = await execPromise(
+            `ls -lA --time-style=long-iso "${fullPath}" 2>/dev/null || echo ""`
+        );
+
+        const items = [];
+        const lines = lsOutput.split('\n').slice(1); // Skip "total" line
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+
+            const parts = line.split(/\s+/);
+            if (parts.length < 8) continue;
+
+            const perms = parts[0];
+            const size = parts[4];
+            const name = parts.slice(7).join(' ');
+
+            if (name === '.' || name === '..') continue;
+
+            const isDir = perms.startsWith('d');
+            const itemPath = path.join(browsePath, name);
+
+            items.push({
+                name,
+                path: itemPath,
+                type: isDir ? 'directory' : 'file',
+                size: isDir ? '-' : size,
+                selected: false
+            });
+        }
+
+        // Démonter immédiatement
+        await execPromise(`umount ${mountPoint}`);
+        await execPromise(`rmdir ${mountPoint}`);
+
+        res.json({
+            success: true,
+            path: browsePath,
+            items: items.sort((a, b) => {
+                if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+                return a.name.localeCompare(b.name);
+            })
+        });
+
+    } catch (error) {
+        console.error('[USB BROWSE] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Démarrer un transfert USB vers USB
 app.post('/api/usb/transfer/start', async (req, res) => {
     try {
-        const { source, destination, options = {} } = req.body;
+        const { source, destination, options = {}, selectedPaths = [] } = req.body;
 
         if (!source || !destination) {
             return res.status(400).json({ error: 'Source et destination requises' });
@@ -430,11 +500,17 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         );
 
         // Scanner la source avant transfert (si demandé)
+        let scanPaths = sourceMountPoint;
+        if (selectedPaths.length > 0) {
+            // Scanner uniquement les fichiers/dossiers sélectionnés
+            scanPaths = selectedPaths.map(p => `"${path.join(sourceMountPoint, p)}"`).join(' ');
+        }
+
         if (options.scan_before_transfer !== false) {
             transferProgress.set(transferId, { status: 'scanning', percent: 10 });
 
             const scanResult = await execPromise(
-                `timeout 300 clamscan -r -i --no-summary ${sourceMountPoint}`,
+                `timeout 300 clamscan -r -i --no-summary ${scanPaths}`,
                 { timeout: 305000 }
             ).catch(e => ({ stdout: e.stdout || '', stderr: e.stderr || '' }));
 
@@ -455,16 +531,39 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         // Effectuer le transfert avec rsync
         transferProgress.set(transferId, { status: 'transferring', percent: 30 });
 
+        let rsyncCommand;
+        if (selectedPaths.length > 0) {
+            // Transférer uniquement les fichiers/dossiers sélectionnés
+            const pathsList = selectedPaths.map(p => `"${path.join(sourceMountPoint, p)}"`).join(' ');
+            rsyncCommand = `rsync -av --progress ${pathsList} "${destMountPoint}/"`;
+        } else {
+            // Transférer tout le contenu
+            rsyncCommand = `rsync -av --progress "${sourceMountPoint}/" "${destMountPoint}/"`;
+        }
+
         const { stdout: rsyncOutput } = await execPromise(
-            `rsync -av --progress ${sourceMountPoint}/ ${destMountPoint}/`,
+            rsyncCommand,
             { timeout: 3600000 } // 1h max
         );
 
         transferProgress.set(transferId, { status: 'verifying', percent: 80 });
 
         // Vérifier l'intégrité
-        const { stdout: sourceCount } = await execPromise(`find ${sourceMountPoint} -type f | wc -l`);
-        const { stdout: destCount } = await execPromise(`find ${destMountPoint} -type f | wc -l`);
+        let sourceCount, destCount;
+        if (selectedPaths.length > 0) {
+            const pathsList = selectedPaths.map(p => `"${path.join(sourceMountPoint, p)}"`).join(' ');
+            const countCmd = `find ${pathsList} -type f | wc -l`;
+            const { stdout: sc } = await execPromise(countCmd);
+            sourceCount = { stdout: sc };
+            // Compter dans la destination (fichiers transférés)
+            const { stdout: dc } = await execPromise(`find "${destMountPoint}" -type f | wc -l`);
+            destCount = { stdout: dc };
+        } else {
+            const { stdout: sc } = await execPromise(`find "${sourceMountPoint}" -type f | wc -l`);
+            const { stdout: dc } = await execPromise(`find "${destMountPoint}" -type f | wc -l`);
+            sourceCount = { stdout: sc };
+            destCount = { stdout: dc };
+        }
 
         // Démonter
         await execPromise(`umount ${sourceMountPoint} ${destMountPoint}`);
@@ -474,10 +573,11 @@ app.post('/api/usb/transfer/start', async (req, res) => {
             transfer_id: transferId,
             source,
             destination,
+            selected_paths: selectedPaths,
             timestamp,
-            files_transferred: parseInt(sourceCount.trim()),
-            files_verified: parseInt(destCount.trim()),
-            integrity_ok: sourceCount.trim() === destCount.trim(),
+            files_transferred: parseInt(sourceCount.stdout.trim()),
+            files_verified: parseInt(destCount.stdout.trim()),
+            integrity_ok: sourceCount.stdout.trim() === destCount.stdout.trim(),
             status: 'completed'
         };
 
