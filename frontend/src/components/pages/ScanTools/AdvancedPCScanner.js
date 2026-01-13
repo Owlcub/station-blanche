@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './AdvancedPCScanner.css';
 import { Card } from '../../design-system';
-import { Monitor, HardDrive, Cpu, Network } from 'lucide-react';
+import { Monitor, HardDrive, Cpu } from 'lucide-react';
 import RemotePCScanner from './RemotePCScanner';
 import DiskImageScanner from './DiskImageScanner';
 import MemoryDumpScanner from './MemoryDumpScanner';
