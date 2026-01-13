@@ -134,9 +134,46 @@ if [ "$INSTALL_MODE" = "1" ]; then
 
     # Configuration autostart pour l'interface graphique
     echo "Configuration du démarrage automatique de l'interface..."
-    AUTOSTART_DIR="/etc/xdg/autostart"
-    mkdir -p "$AUTOSTART_DIR"
-    cp /opt/station-blanche/scripts/station-blanche-kiosk.desktop "$AUTOSTART_DIR/"
+
+    # Détecter l'utilisateur principal (celui qui va utiliser le kiosque)
+    KIOSK_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1; exit}' /etc/passwd)
+    if [ -z "$KIOSK_USER" ]; then
+        KIOSK_USER="admin-station"
+    fi
+
+    echo "Configuration d'autostart pour l'utilisateur : $KIOSK_USER"
+
+    # Créer le fichier autostart Openbox pour cet utilisateur
+    KIOSK_HOME=$(eval echo ~$KIOSK_USER)
+    AUTOSTART_OPENBOX_DIR="$KIOSK_HOME/.config/openbox"
+    mkdir -p "$AUTOSTART_OPENBOX_DIR"
+
+    cat > "$AUTOSTART_OPENBOX_DIR/autostart" << 'EOF'
+#!/bin/bash
+
+# Désactiver l'écran de veille et le curseur
+xset s off
+xset -dpms
+xset s noblank
+unclutter -idle 0.1 &
+
+# Attendre que les services soient prêts
+sleep 5
+
+# Lancer Chromium en mode kiosque (détecter le bon navigateur)
+if command -v chromium &> /dev/null; then
+    chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --touch-events=enabled --enable-features=OverlayScrollbar http://localhost:3000 &
+elif command -v chromium-browser &> /dev/null; then
+    chromium-browser --kiosk --noerrdialogs --disable-infobars --no-first-run --touch-events=enabled --enable-features=OverlayScrollbar http://localhost:3000 &
+elif command -v firefox &> /dev/null; then
+    firefox --kiosk http://localhost:3000 &
+fi
+EOF
+
+    chmod +x "$AUTOSTART_OPENBOX_DIR/autostart"
+    chown -R "$KIOSK_USER:$KIOSK_USER" "$AUTOSTART_OPENBOX_DIR"
+
+    echo "✅ Autostart configuré dans $AUTOSTART_OPENBOX_DIR/autostart"
 
     # Activer LightDM pour le démarrage automatique de l'interface graphique
     echo "Activation de l'interface graphique au démarrage..."
