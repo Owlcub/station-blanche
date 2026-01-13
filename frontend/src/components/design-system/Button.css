@@ -15,6 +15,10 @@
   transition: all var(--transition-base);
   white-space: nowrap;
   user-select: none;
+  /* Optimisations tactiles */
+  min-height: 44px; /* Taille minimale recommandée pour tactile */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn:focus-visible {
@@ -24,18 +28,21 @@
 
 /* Sizes */
 .btn-sm {
-  padding: 6px 12px;
+  padding: 8px 16px; /* Augmenté pour tactile */
   font-size: var(--font-size-xs);
+  min-height: 40px;
 }
 
 .btn-md {
-  padding: 10px 16px;
+  padding: 12px 20px; /* Augmenté pour tactile */
   font-size: var(--font-size-sm);
+  min-height: 48px;
 }
 
 .btn-lg {
-  padding: 12px 24px;
+  padding: 16px 32px; /* Augmenté pour tactile */
   font-size: var(--font-size-base);
+  min-height: 56px;
 }
 
 /* Variants */

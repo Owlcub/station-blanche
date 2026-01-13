@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Station Blanche Kiosk
+Comment=Lancement automatique de l'interface Station Blanche en mode kiosque
+Exec=/opt/station-blanche/scripts/start-kiosk.sh
+Terminal=false
+X-GNOME-Autostart-enabled=true
