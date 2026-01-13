@@ -318,6 +318,204 @@
   color: #047857;
 }
 
+/* USB Selection for Scan */
+.usb-select-section {
+  padding: 1.5rem;
+  background: white;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+}
+
+.usb-select-section h4 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.no-usb {
+  text-align: center;
+  padding: 2rem;
+  color: #718096;
+}
+
+.no-usb p {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+}
+
+.no-usb span {
+  font-size: 0.95rem;
+  color: #a0aec0;
+}
+
+.usb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.usb-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.usb-card:hover {
+  border-color: #10b981;
+  background: #f0fff4;
+  transform: translateY(-2px);
+}
+
+.usb-card svg {
+  color: #10b981;
+}
+
+.usb-card > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.usb-card strong {
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.usb-card span {
+  color: #718096;
+  font-size: 0.95rem;
+}
+
+/* File Browser for Scan */
+.file-browser-scan {
+  padding: 1.5rem;
+  background: white;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+}
+
+.browser-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.browser-header h4 {
+  margin: 0;
+  color: #10b981;
+  font-size: 1.25rem;
+}
+
+.browser-header button {
+  background: #f56565;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.browser-header button:hover {
+  background: #e53e3e;
+  transform: scale(1.05);
+}
+
+.current-path {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f7fafc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  color: #4a5568;
+}
+
+.current-path button {
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+  min-height: 44px;
+}
+
+.current-path button:hover {
+  background: #059669;
+}
+
+.file-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.no-files {
+  text-align: center;
+  padding: 2rem;
+  color: #a0aec0;
+  margin: 0;
+}
+
+.file-item-scan {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background 0.2s;
+  cursor: pointer;
+  min-height: 50px;
+}
+
+.file-item-scan:last-child {
+  border-bottom: none;
+}
+
+.file-item-scan:hover {
+  background: #f0fff4;
+}
+
+.file-item-scan .file-name {
+  flex: 1;
+  font-size: 1rem;
+  color: #2d3748;
+}
+
+.file-item-scan .file-name.folder {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.file-item-scan .file-size {
+  font-size: 0.95rem;
+  color: #718096;
+  min-width: 100px;
+  text-align: right;
+}
+
 @media (max-width: 768px) {
   .file-scanner {
     padding: 1rem;
@@ -334,5 +532,13 @@
 
   .threats-list table {
     font-size: 0.875rem;
+  }
+
+  .file-browser-scan {
+    padding: 1rem;
+  }
+
+  .file-list {
+    max-height: 300px;
   }
 }

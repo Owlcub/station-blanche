@@ -362,9 +362,13 @@ app.post('/api/usb/format', async (req, res) => {
 app.post('/api/usb/safe-eject', async (req, res) => {
     try {
         const { device } = req.body;
+        // Démonter toutes les partitions du device
         await execPromise(`umount ${device}* 2>/dev/null || true`);
-        await execPromise(`eject ${device}`);
-        res.json({ success: true, message: 'Clé USB éjectée' });
+        // Synchroniser et vider les buffers
+        await execPromise(`sync`);
+        // Note: La commande eject n'est pas disponible, on utilise uniquement umount + sync
+        // L'utilisateur peut retirer physiquement la clé après le démontage
+        res.json({ success: true, message: 'Clé USB démontée en toute sécurité. Vous pouvez la retirer.' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -470,6 +474,144 @@ app.post('/api/usb/transfer/browse', async (req, res) => {
 
     } catch (error) {
         console.error('[USB BROWSE] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Parcourir USB pour sélectionner un fichier à scanner (disk image, memory dump)
+app.post('/api/usb/browse-for-scan', async (req, res) => {
+    try {
+        const { device, path: browsePath = '', extensions = [] } = req.body;
+
+        if (!device) {
+            return res.status(400).json({ error: 'Device requis' });
+        }
+
+        const mountId = uuidv4();
+        const mountPoint = `/tmp/usb_browse_scan_${mountId}`;
+
+        await execPromise(`mkdir -p ${mountPoint}`);
+
+        // Tenter de monter le device (avec et sans partition)
+        await execPromise(`mount -o ro ${device} ${mountPoint}`).catch(e =>
+            execPromise(`mount -o ro ${device}1 ${mountPoint}`)
+        );
+
+        const fullPath = path.join(mountPoint, browsePath);
+        const { stdout: lsOutput } = await execPromise(`ls -lA "${fullPath}"`);
+
+        const items = [];
+        const lines = lsOutput.split('\n').slice(1);
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+
+            const parts = line.split(/\s+/);
+            if (parts.length < 9) continue;
+
+            const perms = parts[0];
+            const size = parts[4];
+            const name = parts.slice(8).join(' ');
+
+            if (name === '.' || name === '..') continue;
+
+            const isDir = perms.startsWith('d');
+            const itemPath = browsePath ? `${browsePath}/${name}` : name;
+
+            // Filtrer uniquement les dossiers et les fichiers avec les extensions demandées
+            if (isDir) {
+                items.push({
+                    name,
+                    path: itemPath,
+                    type: 'directory',
+                    size: '-'
+                });
+            } else if (extensions.length === 0 || extensions.some(ext => name.toLowerCase().endsWith(ext.toLowerCase()))) {
+                // Convertir la taille en format lisible
+                const sizeBytes = parseInt(size);
+                let readableSize = size;
+                if (!isNaN(sizeBytes)) {
+                    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                    let unitIndex = 0;
+                    let calcSize = sizeBytes;
+                    while (calcSize >= 1024 && unitIndex < units.length - 1) {
+                        calcSize /= 1024;
+                        unitIndex++;
+                    }
+                    readableSize = `${Math.round(calcSize * 100) / 100} ${units[unitIndex]}`;
+                }
+
+                items.push({
+                    name,
+                    path: itemPath,
+                    type: 'file',
+                    size: readableSize,
+                    fullPath: path.join(mountPoint, itemPath) // Chemin complet sur le système
+                });
+            }
+        }
+
+        // Démonter immédiatement
+        await execPromise(`umount ${mountPoint}`);
+        await execPromise(`rmdir ${mountPoint}`);
+
+        res.json({
+            success: true,
+            path: browsePath,
+            items: items.sort((a, b) => {
+                if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+                return a.name.localeCompare(b.name);
+            })
+        });
+
+    } catch (error) {
+        console.error('[USB BROWSE SCAN] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Copier un fichier depuis USB vers tmp pour scan
+app.post('/api/usb/copy-for-scan', async (req, res) => {
+    try {
+        const { device, filePath } = req.body;
+
+        if (!device || !filePath) {
+            return res.status(400).json({ error: 'Device et filePath requis' });
+        }
+
+        const mountId = uuidv4();
+        const mountPoint = `/tmp/usb_copy_${mountId}`;
+        const destPath = `/tmp/scan_file_${mountId}_${path.basename(filePath)}`;
+
+        await execPromise(`mkdir -p ${mountPoint}`);
+
+        // Monter le device en lecture seule
+        await execPromise(`mount -o ro ${device} ${mountPoint}`).catch(e =>
+            execPromise(`mount -o ro ${device}1 ${mountPoint}`)
+        );
+
+        const sourcePath = path.join(mountPoint, filePath);
+
+        // Copier le fichier
+        await execPromise(`cp "${sourcePath}" "${destPath}"`);
+
+        // Démonter
+        await execPromise(`umount ${mountPoint}`);
+        await execPromise(`rmdir ${mountPoint}`);
+
+        // Obtenir la taille du fichier copié
+        const { stdout: statOutput } = await execPromise(`stat -c %s "${destPath}"`);
+        const fileSize = parseInt(statOutput.trim());
+
+        res.json({
+            success: true,
+            file_path: destPath,
+            file_name: path.basename(filePath),
+            file_size: fileSize
+        });
+
+    } catch (error) {
+        console.error('[USB COPY FOR SCAN] Error:', error);
         res.status(500).json({ error: error.message });
     }
 });

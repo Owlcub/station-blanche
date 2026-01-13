@@ -7,13 +7,14 @@ import DiskImageScanner from './DiskImageScanner';
 import MemoryDumpScanner from './MemoryDumpScanner';
 
 const AdvancedPCScanner = () => {
-  const [activeTab, setActiveTab] = useState('network');
+  const [activeTab, setActiveTab] = useState('disk');
 
   return (
     <div className="advanced-pc-scanner">
-      <Card icon={Monitor} title="Scan PC Avancé - 3 Modes">
+      <Card icon={Monitor} title="Scan PC Avancé - 2 Modes">
         <div className="scanner-tabs">
-          <button
+          {/* EDR Network scan temporairement caché */}
+          {/* <button
             className={`scanner-tab ${activeTab === 'network' ? 'active' : ''}`}
             onClick={() => setActiveTab('network')}
           >
@@ -22,7 +23,7 @@ const AdvancedPCScanner = () => {
               <span className="tab-title">Scan Réseau (EDR)</span>
               <span className="tab-desc">PC en ligne avec agent</span>
             </div>
-          </button>
+          </button> */}
 
           <button
             className={`scanner-tab ${activeTab === 'disk' ? 'active' : ''}`}

@@ -1,44 +1,97 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './FileScanner.css';
 import { Button, Loading } from '../../design-system';
-import { Cpu, Upload, Play, CheckCircle, AlertTriangle, Terminal } from 'lucide-react';
+import { Cpu, Usb, Play, CheckCircle, AlertTriangle, Terminal, FolderOpen } from 'lucide-react';
 import API_URL from '../../../config';
 
 const MemoryDumpScanner = () => {
-  const [uploading, setUploading] = useState(false);
+  const [usbDevices, setUsbDevices] = useState([]);
+  const [selectedUSB, setSelectedUSB] = useState(null);
+  const [showBrowser, setShowBrowser] = useState(false);
+  const [browserItems, setBrowserItems] = useState([]);
+  const [currentPath, setCurrentPath] = useState('');
+  const [loadingBrowser, setLoadingBrowser] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const handleFileSelect = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  useEffect(() => {
+    detectUSB();
+    const interval = setInterval(detectUSB, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
-    setUploading(true);
-    setError(null);
-    setScanResult(null);
-
+  const detectUSB = async () => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const response = await fetch(`${API_URL}/api/usb/transfer/list`);
+      const data = await response.json();
+      if (data.success && data.devices) {
+        setUsbDevices(data.devices);
+      }
+    } catch (error) {
+      console.error('Erreur détection USB:', error);
+    }
+  };
 
-      const response = await fetch(`${API_URL}/api/pc/upload`, {
+  const browseUSB = async (device, path = '') => {
+    setLoadingBrowser(true);
+    try {
+      const response = await fetch(`${API_URL}/api/usb/browse-for-scan`, {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          device: device.device,
+          path,
+          extensions: ['.mem', '.raw', '.dmp', '.dump']
+        })
       });
 
       const data = await response.json();
+      if (data.success) {
+        setBrowserItems(data.items);
+        setCurrentPath(data.path);
+        setSelectedUSB(device);
+        setShowBrowser(true);
+      }
+    } catch (error) {
+      setError('Erreur navigation USB: ' + error.message);
+    } finally {
+      setLoadingBrowser(false);
+    }
+  };
 
+  const selectFile = async (item) => {
+    if (item.type === 'directory') {
+      browseUSB(selectedUSB, item.path);
+      return;
+    }
+
+    // Copier le fichier depuis USB
+    setCopying(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/api/usb/copy-for-scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          device: selectedUSB.device,
+          filePath: item.path
+        })
+      });
+
+      const data = await response.json();
       if (data.success) {
         setUploadedFile(data);
+        setShowBrowser(false);
       } else {
-        setError(data.error || 'Erreur lors de l\'upload');
+        setError(data.error || 'Erreur lors de la copie du fichier');
       }
     } catch (err) {
       setError('Erreur de connexion: ' + err.message);
     } finally {
-      setUploading(false);
+      setCopying(false);
     }
   };
 
@@ -86,29 +139,90 @@ const MemoryDumpScanner = () => {
         <Cpu size={32} color="#10b981" />
         <div>
           <h3>Scan de Memory Dump (RAM)</h3>
-          <p>Analysez des dumps mémoire (.mem, .raw, .dmp) avec Volatility 3</p>
+          <p>Analysez des dumps mémoire (.mem, .raw, .dmp) depuis une clé USB avec Volatility 3</p>
         </div>
       </div>
 
       <div className="upload-section">
-        <div className="upload-box">
-          <Upload size={48} />
-          <p>Choisissez un dump mémoire à analyser</p>
-          <label className="upload-btn">
-            <input
-              type="file"
-              accept=".mem,.raw,.dmp,.dump"
-              onChange={handleFileSelect}
-              disabled={uploading}
-              style={{ display: 'none' }}
-            />
-            <Button icon={Upload} disabled={uploading}>
-              {uploading ? 'Upload en cours...' : 'Sélectionner un fichier'}
-            </Button>
-          </label>
-        </div>
+        {!uploadedFile && !showBrowser && (
+          <div className="usb-select-section">
+            <h4><Usb size={20} /> Sélectionnez une clé USB</h4>
+            {usbDevices.length === 0 ? (
+              <div className="no-usb">
+                <p>Aucune clé USB détectée</p>
+                <span>Insérez une clé USB contenant le dump mémoire</span>
+              </div>
+            ) : (
+              <div className="usb-list">
+                {usbDevices.map((device, idx) => (
+                  <div
+                    key={idx}
+                    className="usb-card"
+                    onClick={() => browseUSB(device)}
+                  >
+                    <Usb size={24} />
+                    <div>
+                      <strong>{device.name}</strong>
+                      <span>{device.size}</span>
+                    </div>
+                    <Button icon={FolderOpen} size="sm">
+                      Parcourir
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-        {uploading && <Loading text="Upload du fichier en cours..." />}
+        {showBrowser && (
+          <div className="file-browser-scan">
+            <div className="browser-header">
+              <h4>📂 Parcourir: {selectedUSB.name}</h4>
+              <button onClick={() => setShowBrowser(false)}>✕ Fermer</button>
+            </div>
+            <div className="current-path">
+              <span>Chemin: /{currentPath || 'racine'}</span>
+              {currentPath && (
+                <button onClick={() => {
+                  const parentPath = currentPath.split('/').slice(0, -1).join('/');
+                  browseUSB(selectedUSB, parentPath);
+                }}>⬆️ Dossier parent</button>
+              )}
+            </div>
+            {loadingBrowser ? (
+              <Loading text="Chargement..." />
+            ) : (
+              <div className="file-list">
+                {browserItems.length === 0 ? (
+                  <p className="no-files">Aucun fichier .mem, .raw, .dmp ou .dump trouvé</p>
+                ) : (
+                  browserItems.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="file-item-scan"
+                      onClick={() => selectFile(item)}
+                    >
+                      {item.type === 'directory' ? (
+                        <>
+                          <span className="file-name folder">📁 {item.name}</span>
+                          <span className="file-size">{item.size}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="file-name">🧠 {item.name}</span>
+                          <span className="file-size">{item.size}</span>
+                        </>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {copying && <Loading text="Copie du fichier depuis la clé USB..." />}
 
         {uploadedFile && !scanning && !scanResult && (
           <div className="file-info">
