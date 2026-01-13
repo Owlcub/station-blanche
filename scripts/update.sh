@@ -92,22 +92,52 @@ if [ -d "/opt/station-blanche" ]; then
         echo ""
         echo "🔄 Redémarrage dans 5 secondes..."
         sleep 5
+
+        # Trouver la commande de redémarrage appropriée
         if [ "$IS_ROOT" = true ]; then
-            reboot
+            if command -v systemctl &> /dev/null; then
+                systemctl reboot
+            elif [ -x /sbin/reboot ]; then
+                /sbin/reboot
+            elif [ -x /usr/sbin/reboot ]; then
+                /usr/sbin/reboot
+            else
+                reboot
+            fi
         elif command -v sudo &> /dev/null; then
-            sudo reboot
+            if command -v systemctl &> /dev/null; then
+                sudo systemctl reboot
+            else
+                sudo reboot
+            fi
         else
             echo "⚠️  sudo non disponible. Exécutez manuellement :"
-            echo "  su -c reboot"
+            if command -v systemctl &> /dev/null; then
+                echo "  su -c 'systemctl reboot'"
+            elif [ -x /sbin/reboot ]; then
+                echo "  su -c '/sbin/reboot'"
+            else
+                echo "  su -c 'reboot'"
+            fi
             exit 1
         fi
     else
         echo ""
         echo "Pour redémarrer plus tard, exécutez :"
         if command -v sudo &> /dev/null; then
-            echo "  sudo reboot"
+            if command -v systemctl &> /dev/null; then
+                echo "  sudo systemctl reboot"
+            else
+                echo "  sudo reboot"
+            fi
         else
-            echo "  su -c reboot"
+            if command -v systemctl &> /dev/null; then
+                echo "  su -c 'systemctl reboot'"
+            elif [ -x /sbin/reboot ]; then
+                echo "  su -c '/sbin/reboot'"
+            else
+                echo "  su -c 'reboot'"
+            fi
         fi
         echo ""
     fi
