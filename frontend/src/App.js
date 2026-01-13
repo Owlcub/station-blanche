@@ -17,8 +17,13 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <h1>🔒 Station Blanche - Scanner de Sécurité</h1>
-        <p>Scan USB, PC Windows et transfert sécurisé</p>
+        <div className="header-logo">
+          <img src="/logo-owlcub.svg" alt="Owlcub Logo" className="owlcub-logo" />
+        </div>
+        <div className="header-content">
+          <h1>OWLCUB - Station Blanche</h1>
+          <p>Scanner de Sécurité USB et PC</p>
+        </div>
       </header>
 
       <nav className="app-nav">

@@ -33,6 +33,42 @@ else
     echo "⚠️  Logo non trouvé, création d'un logo par défaut..."
 fi
 
+# Configuration LightDM principale (auto-login)
+LIGHTDM_MAIN_CONF="/etc/lightdm/lightdm.conf"
+
+# Détecter l'utilisateur principal (celui qui n'est pas root)
+DEFAULT_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1; exit}' /etc/passwd)
+
+if [ -z "$DEFAULT_USER" ]; then
+    DEFAULT_USER="admin-station"
+    echo "⚠️  Aucun utilisateur détecté, utilisation de $DEFAULT_USER par défaut"
+else
+    echo "✅ Utilisateur détecté pour auto-login : $DEFAULT_USER"
+fi
+
+# Backup de la config existante
+if [ -f "$LIGHTDM_MAIN_CONF" ]; then
+    cp "$LIGHTDM_MAIN_CONF" "$LIGHTDM_MAIN_CONF.backup"
+fi
+
+# Créer la configuration principale avec auto-login
+cat > "$LIGHTDM_MAIN_CONF" << EOF
+[Seat:*]
+# Auto-login sans mot de passe
+autologin-user = $DEFAULT_USER
+autologin-user-timeout = 0
+autologin-session = openbox
+
+# Greeter
+greeter-session = lightdm-gtk-greeter
+greeter-hide-users = false
+
+# Session
+user-session = openbox
+EOF
+
+echo "✅ Auto-login configuré pour l'utilisateur : $DEFAULT_USER"
+
 # Configuration LightDM GTK Greeter
 LIGHTDM_CONF="/etc/lightdm/lightdm-gtk-greeter.conf"
 
@@ -65,7 +101,7 @@ show-indicators = ~host;~spacer;~clock;~spacer;~power
 active-monitor = #0
 EOF
 
-echo "✅ Configuration LightDM mise à jour"
+echo "✅ Configuration LightDM GTK Greeter mise à jour"
 
 # Installer lightdm-gtk-greeter si nécessaire
 if ! dpkg -l | grep -q "lightdm-gtk-greeter"; then
@@ -143,8 +179,11 @@ echo ""
 echo "✅ Personnalisation terminée !"
 echo ""
 echo "Modifications appliquées :"
+echo "  ✅ Auto-login activé pour : $DEFAULT_USER"
 echo "  ✅ Logo Owlcub affiché"
 echo "  ✅ Fond d'écran bleu (#667eea)"
 echo "  ✅ Message de bienvenue personnalisé"
 echo "  ✅ Thème CSS Owlcub"
+echo ""
+echo "⚠️  IMPORTANT : La station se connectera automatiquement sans mot de passe"
 echo ""

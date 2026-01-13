@@ -11,20 +11,61 @@
 
 .app-header {
   background: rgba(255, 255, 255, 0.95);
-  padding: 2rem;
-  text-align: center;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header-logo {
+  flex-shrink: 0;
+}
+
+.owlcub-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.header-content {
+  text-align: left;
 }
 
 .app-header h1 {
   margin: 0;
-  color: #2d3748;
+  color: #667eea;
   font-size: 2rem;
+  font-weight: 700;
 }
 
 .app-header p {
   margin: 0.5rem 0 0 0;
   color: #718096;
+  font-size: 1rem;
+}
+
+/* Responsive header */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .owlcub-logo {
+    width: 60px;
+    height: 60px;
+  }
+
+  .header-content {
+    text-align: center;
+  }
+
+  .app-header h1 {
+    font-size: 1.5rem;
+  }
 }
 
 .app-nav {
