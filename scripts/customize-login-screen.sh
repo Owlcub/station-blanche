@@ -25,12 +25,15 @@ echo "🎨 Personnalisation de LightDM..."
 # Créer le répertoire pour les assets
 mkdir -p /usr/share/pixmaps/owlcub
 
-# Copier le logo
-if [ -f "$PROJECT_DIR/assets/logo-owlcub.svg" ]; then
+# Copier le logo (PNG prioritaire, sinon SVG)
+if [ -f "$PROJECT_DIR/assets/logo-owlcub.png" ]; then
+    cp "$PROJECT_DIR/assets/logo-owlcub.png" /usr/share/pixmaps/owlcub/
+    echo "✅ Logo Owlcub (PNG) copié"
+elif [ -f "$PROJECT_DIR/assets/logo-owlcub.svg" ]; then
     cp "$PROJECT_DIR/assets/logo-owlcub.svg" /usr/share/pixmaps/owlcub/
-    echo "✅ Logo Owlcub copié"
+    echo "✅ Logo Owlcub (SVG) copié"
 else
-    echo "⚠️  Logo non trouvé, création d'un logo par défaut..."
+    echo "⚠️  Logo non trouvé"
 fi
 
 # Configuration LightDM principale (auto-login)
@@ -87,7 +90,7 @@ icon-theme-name = Adwaita
 font-name = Sans 11
 
 # Logo Owlcub
-logo = /usr/share/pixmaps/owlcub/logo-owlcub.svg
+logo = /usr/share/pixmaps/owlcub/logo-owlcub.png
 
 # Position des éléments
 indicators = ~host;~spacer;~clock;~spacer;~session;~language;~a11y;~power

@@ -18,7 +18,7 @@ function App() {
     <div className="App">
       <header className="app-header">
         <div className="header-logo">
-          <img src="/logo-owlcub.svg" alt="Owlcub Logo" className="owlcub-logo" />
+          <img src="/logo-owlcub.png" alt="Owlcub Logo" className="owlcub-logo" />
         </div>
         <div className="header-content">
           <h1>OWLCUB - Station Blanche</h1>
