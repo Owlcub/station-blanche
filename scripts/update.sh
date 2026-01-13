@@ -37,10 +37,13 @@ cd frontend
 npm install
 
 # Si en mode kiosque (/opt/station-blanche existe), rebuild le frontend
-if [ -d "/opt/station-blanche" ] && [ "$IS_ROOT" = true ]; then
+if [ -d "/opt/station-blanche" ]; then
     echo ""
     echo "🏗️  Rebuild du frontend pour le mode kiosque..."
     npm run build
+else
+    echo ""
+    echo "ℹ️  Mode développement - pas de rebuild (utilisez 'npm start')"
 fi
 
 cd ..
