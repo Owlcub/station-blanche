@@ -45,7 +45,8 @@ if [ -f /etc/debian_version ]; then
             echo "⚠️  Chromium non disponible, installation de Firefox comme alternative"
             CHROMIUM_PKG="firefox-esr"
         fi
-        PACKAGES="$PACKAGES $CHROMIUM_PKG unclutter xdotool x11-xserver-utils"
+        # Ajouter environnement graphique + navigateur + outils kiosque
+        PACKAGES="$PACKAGES xorg lightdm openbox $CHROMIUM_PKG unclutter xdotool x11-xserver-utils"
     fi
 
     apt-get install -y $PACKAGES
@@ -137,10 +138,19 @@ if [ "$INSTALL_MODE" = "1" ]; then
     mkdir -p "$AUTOSTART_DIR"
     cp /opt/station-blanche/scripts/station-blanche-kiosk.desktop "$AUTOSTART_DIR/"
 
+    # Activer LightDM pour le démarrage automatique de l'interface graphique
+    echo "Activation de l'interface graphique au démarrage..."
+    systemctl enable lightdm
+
     echo ""
     echo "✅ Installation terminée en mode KIOSQUE !"
     echo ""
     echo "La station blanche démarrera automatiquement au démarrage du système."
+    echo ""
+    echo "Configuration :"
+    echo "  ✅ Interface graphique activée (LightDM)"
+    echo "  ✅ Services backend et frontend démarrés"
+    echo "  ✅ Navigateur en mode kiosque configuré"
     echo ""
     echo "Commandes utiles :"
     echo "  - Redémarrer backend:  sudo systemctl restart station-blanche-backend"
@@ -148,7 +158,7 @@ if [ "$INSTALL_MODE" = "1" ]; then
     echo "  - Voir les logs:       sudo journalctl -u station-blanche-backend -f"
     echo "  - Accès manuel:        http://localhost:3000"
     echo ""
-    echo "⚠️  Redémarrez le système pour lancer le mode kiosque complet."
+    echo "⚠️  Redémarrez le système pour lancer le mode kiosque complet : reboot"
     echo ""
 
 else
