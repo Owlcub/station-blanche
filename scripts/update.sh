@@ -22,6 +22,15 @@ if [ "$EUID" -eq 0 ]; then
     IS_ROOT=true
 fi
 
+echo "📥 Vérification de la configuration git..."
+# Vérifier si l'URL est en SSH et la convertir en HTTPS
+CURRENT_URL=$(git remote get-url origin 2>/dev/null || echo "")
+if [[ "$CURRENT_URL" == git@github.com:* ]] || [[ "$CURRENT_URL" == *"github-station"* ]]; then
+    echo "🔧 Conversion de l'URL SSH en HTTPS..."
+    git remote set-url origin https://github.com/Owlcub/station-blanche.git
+    echo "✅ URL mise à jour vers HTTPS"
+fi
+
 echo "📥 Récupération des dernières modifications depuis GitHub..."
 git pull origin main
 
