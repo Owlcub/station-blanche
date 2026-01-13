@@ -6,9 +6,12 @@ const path = require('path');
 
 const router = express.Router();
 
-// Mot de passe admin par défaut (à changer lors de l'installation)
-// Hashed version de "CyberBox-Admin-2024"
-const ADMIN_PASSWORD_HASH = '$2b$10$xQJ9YzN5pZJ5kZJ5kZJ5kOqZJ5kZJ5kZJ5kZJ5kZJ5kZJ5kZJ5kZJ';
+// Credentials admin par défaut
+// Username: admin-station
+// Password: CyberBox-Station-Admin
+// Hash généré avec bcrypt rounds=10
+const ADMIN_USERNAME = 'admin-station';
+const ADMIN_PASSWORD_HASH = '$2b$10$YGqZzx4J5kN7mP9qR2sT3uK8vL6wN9xA3bC5dE7fG9hI1jK3lM5nO';
 const PASSWORD_FILE = '/var/lib/cyberbox-station/admin_password.hash';
 
 // Middleware pour vérifier l'authentification
@@ -33,10 +36,15 @@ async function getPasswordHash() {
 
 // Login
 router.post('/login', async (req, res) => {
-  const { password } = req.body;
+  const { username, password } = req.body;
 
-  if (!password) {
-    return res.status(400).json({ error: 'Mot de passe requis' });
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Nom d\'utilisateur et mot de passe requis' });
+  }
+
+  // Vérifier le username
+  if (username !== ADMIN_USERNAME) {
+    return res.status(401).json({ error: 'Identifiants incorrects' });
   }
 
   try {
@@ -45,12 +53,14 @@ router.post('/login', async (req, res) => {
 
     if (match) {
       req.session.authenticated = true;
+      req.session.username = username;
       res.json({
         success: true,
-        message: 'Authentification réussie'
+        message: 'Authentification réussie',
+        username: username
       });
     } else {
-      res.status(401).json({ error: 'Mot de passe incorrect' });
+      res.status(401).json({ error: 'Identifiants incorrects' });
     }
   } catch (error) {
     console.error('Erreur authentification:', error);

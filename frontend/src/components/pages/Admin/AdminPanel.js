@@ -7,6 +7,7 @@ const API_URL = 'http://localhost:8000';
 
 function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,10 +41,11 @@ function AdminPanel() {
 
     try {
       await axios.post(`${API_URL}/api/admin/login`,
-        { password },
+        { username, password },
         { withCredentials: true }
       );
       setIsAuthenticated(true);
+      setUsername('');
       setPassword('');
       loadStats();
     } catch (err) {
@@ -159,35 +161,48 @@ function AdminPanel() {
         <div className="admin-login-card">
           <div className="admin-login-header">
             <Lock size={48} />
-            <h2>Administration</h2>
-            <p>Connexion requise</p>
+            <h2>Administration Station Blanche</h2>
+            <p>Accès sécurisé</p>
           </div>
 
           <form onSubmit={handleLogin}>
             <div className="form-group">
               <input
+                type="text"
+                placeholder="Nom d'utilisateur"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+                autoComplete="username"
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group">
+              <input
                 type="password"
-                placeholder="Mot de passe admin"
+                placeholder="Mot de passe"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                autoFocus
+                autoComplete="current-password"
               />
             </div>
 
             {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" disabled={loading}>
+            <button type="submit" disabled={loading || !username || !password} className="btn-login">
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
-          </form>
 
-          <div className="admin-login-info">
-            <p>Mot de passe par défaut : <code>CyberBox-Admin-2024</code></p>
-            <p style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '1rem' }}>
-              Changez-le dans /var/lib/cyberbox-station/admin_password.hash
-            </p>
-          </div>
+            <button
+              type="button"
+              className="btn-back"
+              onClick={() => window.location.href = '/'}
+            >
+              ← Retour à l'accueil
+            </button>
+          </form>
         </div>
       </div>
     );

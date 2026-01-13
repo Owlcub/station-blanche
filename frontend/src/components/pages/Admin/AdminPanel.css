@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   padding: 2rem;
 }
 
@@ -23,7 +23,7 @@
 }
 
 .admin-login-header svg {
-  color: #667eea;
+  color: #10b981;
   margin-bottom: 1rem;
 }
 
@@ -56,7 +56,7 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #10b981;
 }
 
 .form-group input:disabled {
@@ -73,10 +73,10 @@
   text-align: center;
 }
 
-.admin-login button {
+.admin-login .btn-login {
   width: 100%;
   padding: 1rem;
-  background: #667eea;
+  background: #10b981;
   color: white;
   border: none;
   border-radius: 8px;
@@ -84,36 +84,35 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  min-height: 48px;
+  margin-bottom: 0.75rem;
 }
 
-.admin-login button:hover:not(:disabled) {
-  background: #5568d3;
+.admin-login .btn-login:hover:not(:disabled) {
+  background: #059669;
 }
 
-.admin-login button:disabled {
+.admin-login .btn-back {
+  width: 100%;
+  padding: 0.75rem;
+  background: transparent;
+  color: #10b981;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+}
+
+.admin-login .btn-back:hover {
+  background: #f0fff4;
+}
+
+.admin-login .btn-login:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.admin-login-info {
-  text-align: center;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
-}
-
-.admin-login-info p {
-  margin: 0.5rem 0;
-  color: #718096;
-  font-size: 0.875rem;
-}
-
-.admin-login-info code {
-  background: #f7fafc;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  color: #667eea;
 }
 
 /* Admin Panel */
@@ -184,7 +183,7 @@
 }
 
 .admin-nav button.active {
-  background: #667eea;
+  background: #10b981;
   color: white;
 }
 
@@ -292,7 +291,7 @@
 
 .action-group button {
   padding: 0.75rem 1.5rem;
-  background: #667eea;
+  background: #10b981;
   color: white;
   border: none;
   border-radius: 6px;
@@ -300,10 +299,11 @@
   font-weight: 500;
   transition: background 0.2s;
   font-size: 1rem;
+  min-height: 48px;
 }
 
 .action-group button:hover:not(:disabled) {
-  background: #5568d3;
+  background: #059669;
 }
 
 .action-group button:disabled {
