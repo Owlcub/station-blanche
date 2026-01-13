@@ -76,3 +76,31 @@ echo ""
 echo "Version actuelle :"
 git log -1 --oneline
 echo ""
+
+# Proposer un redémarrage complet
+if [ -d "/opt/station-blanche" ]; then
+    echo "================================================"
+    echo "  ⚠️  Redémarrage recommandé"
+    echo "================================================"
+    echo ""
+    echo "Pour appliquer complètement les modifications,"
+    echo "il est recommandé de redémarrer la Station Blanche."
+    echo ""
+    read -p "Voulez-vous redémarrer maintenant ? [y/N] " REBOOT_NOW
+
+    if [ "$REBOOT_NOW" = "y" ] || [ "$REBOOT_NOW" = "Y" ]; then
+        echo ""
+        echo "🔄 Redémarrage dans 5 secondes..."
+        sleep 5
+        if [ "$IS_ROOT" = true ]; then
+            reboot
+        else
+            sudo reboot
+        fi
+    else
+        echo ""
+        echo "Pour redémarrer plus tard, exécutez :"
+        echo "  sudo reboot"
+        echo ""
+    fi
+fi
