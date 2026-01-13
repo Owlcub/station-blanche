@@ -142,6 +142,12 @@ if [ "$INSTALL_MODE" = "1" ]; then
     echo "Activation de l'interface graphique au démarrage..."
     systemctl enable lightdm
 
+    # Personnaliser l'écran de connexion avec le logo Owlcub
+    echo "Personnalisation de l'écran de connexion..."
+    if [ -f "/opt/station-blanche/scripts/customize-login-screen.sh" ]; then
+        /opt/station-blanche/scripts/customize-login-screen.sh
+    fi
+
     echo ""
     echo "✅ Installation terminée en mode KIOSQUE !"
     echo ""
