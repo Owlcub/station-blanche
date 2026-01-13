@@ -14,18 +14,36 @@ unclutter -idle 5 &
 # Attendre que les services soient prêts
 sleep 10
 
-# Lancer Chromium en mode kiosque
-chromium-browser \
-  --kiosk \
-  --noerrdialogs \
-  --disable-infobars \
-  --disable-session-crashed-bubble \
-  --disable-restore-session-state \
-  --disable-pinch \
-  --overscroll-history-navigation=0 \
-  --touch-events=enabled \
-  --enable-features=OverlayScrollbar \
-  http://localhost:3000
-
-# Alternative avec Firefox (si Chromium n'est pas disponible)
-# firefox --kiosk http://localhost:3000
+# Détecter le navigateur disponible et lancer en mode kiosque
+if command -v chromium-browser &> /dev/null; then
+    chromium-browser \
+      --kiosk \
+      --noerrdialogs \
+      --disable-infobars \
+      --disable-session-crashed-bubble \
+      --disable-restore-session-state \
+      --disable-pinch \
+      --overscroll-history-navigation=0 \
+      --touch-events=enabled \
+      --enable-features=OverlayScrollbar \
+      http://localhost:3000
+elif command -v chromium &> /dev/null; then
+    chromium \
+      --kiosk \
+      --noerrdialogs \
+      --disable-infobars \
+      --disable-session-crashed-bubble \
+      --disable-restore-session-state \
+      --disable-pinch \
+      --overscroll-history-navigation=0 \
+      --touch-events=enabled \
+      --enable-features=OverlayScrollbar \
+      http://localhost:3000
+elif command -v firefox &> /dev/null; then
+    firefox --kiosk http://localhost:3000
+elif command -v firefox-esr &> /dev/null; then
+    firefox-esr --kiosk http://localhost:3000
+else
+    echo "❌ Aucun navigateur trouvé (chromium/firefox)"
+    exit 1
+fi

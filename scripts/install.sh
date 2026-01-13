@@ -34,7 +34,16 @@ if [ -f /etc/debian_version ]; then
 
     # Ajouter les paquets pour le mode kiosque
     if [ "$INSTALL_MODE" = "1" ]; then
-        PACKAGES="$PACKAGES chromium-browser unclutter xdotool x11-xserver-utils"
+        # Détecter le bon paquet chromium selon la distribution
+        if apt-cache show chromium-browser &>/dev/null; then
+            CHROMIUM_PKG="chromium-browser"
+        elif apt-cache show chromium &>/dev/null; then
+            CHROMIUM_PKG="chromium"
+        else
+            echo "⚠️  Chromium non trouvé, installation de Firefox comme alternative"
+            CHROMIUM_PKG="firefox-esr"
+        fi
+        PACKAGES="$PACKAGES $CHROMIUM_PKG unclutter xdotool x11-xserver-utils"
     fi
 
     apt-get install -y $PACKAGES
