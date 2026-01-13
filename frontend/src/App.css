@@ -64,6 +64,19 @@
   border-color: #667eea;
 }
 
+.app-nav button.admin-link {
+  margin-left: auto;
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.app-nav button.admin-link:hover {
+  background: #edf2f7;
+  border-color: #a0aec0;
+  color: #2d3748;
+  transform: translateY(-2px);
+}
+
 .app-main {
   flex: 1;
   padding: 2rem;

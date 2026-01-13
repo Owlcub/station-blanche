@@ -72,7 +72,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_DIR/backend"
-pip3 install -r requirements.txt
+
+# Sur Debian 13+ (Trixie), pip nécessite --break-system-packages ou venv
+if pip3 install -r requirements.txt 2>&1 | grep -q "externally-managed-environment"; then
+    echo "⚠️  Environnement Python géré, installation avec --break-system-packages"
+    pip3 install --break-system-packages -r requirements.txt
+fi
 
 echo ""
 echo "📦 Installation des dépendances Node.js (Backend)..."

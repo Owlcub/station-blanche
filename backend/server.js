@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const session = require('express-session');
 const { exec } = require('child_process');
 const util = require('util');
 const fs = require('fs').promises;
@@ -28,6 +29,18 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Configuration session pour l'admin
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'cyberbox-station-secret-' + Math.random().toString(36),
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // mettre à true si HTTPS
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 heures
+  }
+}));
 
 // Base de données simple
 const DB_FILE = '/var/lib/cyberbox-station/scans.json';
@@ -517,6 +530,11 @@ app.post('/api/workstation/scan', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// ==================== ADMIN ROUTES ====================
+
+const adminRouter = require('./admin');
+app.use('/api/admin', adminRouter);
 
 // ==================== DÉMARRAGE ====================
 

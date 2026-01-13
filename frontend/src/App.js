@@ -3,10 +3,16 @@ import './App.css';
 import USBScanner from './components/pages/ScanTools/USBScanner';
 import RemotePCScanner from './components/pages/ScanTools/RemotePCScanner';
 import USBTransfer from './components/pages/ScanTools/USBTransfer';
-import { Usb, Monitor, ArrowLeftRight } from 'lucide-react';
+import AdminPanel from './components/pages/Admin/AdminPanel';
+import { Usb, Monitor, ArrowLeftRight, Settings } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('usb');
+
+  // Si on accède directement à /admin via URL
+  if (window.location.pathname === '/admin') {
+    return <AdminPanel />;
+  }
 
   return (
     <div className="App">
@@ -37,6 +43,13 @@ function App() {
           <Monitor size={20} />
           Scanner PC
         </button>
+        <button
+          className="admin-link"
+          onClick={() => window.location.href = '/admin'}
+        >
+          <Settings size={20} />
+          Admin
+        </button>
       </nav>
 
       <main className="app-main">
@@ -47,6 +60,9 @@ function App() {
 
       <footer className="app-footer">
         <p>Station Blanche v1.0 - Analyse de sécurité USB et PC</p>
+        <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.8 }}>
+          Développé par <strong>CupaDev</strong> & <strong>Owlcub</strong>
+        </p>
       </footer>
     </div>
   );
