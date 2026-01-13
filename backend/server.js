@@ -616,14 +616,270 @@ app.get('/api/usb/transfer/history', async (req, res) => {
     }
 });
 
-// ==================== PC SCANNER ====================
+// ==================== PC SCANNER AVANCÉ ====================
 
-app.post('/api/workstation/scan', async (req, res) => {
+// Scan d'image disque (DD/IMG/RAW)
+app.post('/api/pc/scan/disk-image', async (req, res) => {
     try {
-        // TODO: Implémenter le scan PC via Python
+        const { filePath } = req.body;
+
+        if (!filePath) {
+            return res.status(400).json({ error: 'Chemin du fichier requis' });
+        }
+
+        const scanId = uuidv4();
+        const timestamp = new Date().toISOString();
+        const mountPoint = `/tmp/disk_scan_${scanId}`;
+
+        // Créer le point de montage
+        await execPromise(`mkdir -p ${mountPoint}`);
+
+        console.log(`[DISK SCAN] Analyse de ${filePath}`);
+
+        // Monter l'image en lecture seule
+        try {
+            // Créer un loop device
+            const { stdout: loopDevice } = await execPromise(`losetup -f --show --read-only "${filePath}"`);
+            const loop = loopDevice.trim();
+
+            // Essayer de détecter les partitions
+            await execPromise(`kpartx -a ${loop}`).catch(() => {
+                console.log('[DISK SCAN] Pas de partitions détectées, montage direct');
+            });
+
+            // Monter en lecture seule
+            await execPromise(`mount -o ro ${loop} ${mountPoint}`).catch(async (e) => {
+                // Si échec, essayer avec la première partition
+                const { stdout: partitions } = await execPromise(`ls ${loop}p* 2>/dev/null || echo ""`);
+                if (partitions) {
+                    const firstPart = partitions.split('\n')[0];
+                    await execPromise(`mount -o ro ${firstPart} ${mountPoint}`);
+                } else {
+                    throw new Error('Impossible de monter l\'image disque');
+                }
+            });
+
+            // Scanner avec ClamAV
+            console.log('[DISK SCAN] Scan ClamAV en cours...');
+            const { stdout: scanOutput, stderr: scanError } = await execPromise(
+                `clamscan -r -i --max-filesize=500M --max-scansize=1000M "${mountPoint}" 2>&1 || true`,
+                { timeout: 1800000 } // 30 minutes max
+            );
+
+            // Détecter l'OS
+            let osDetected = 'Unknown';
+            try {
+                const { stdout: osRelease } = await execPromise(`cat "${mountPoint}/etc/os-release" 2>/dev/null || cat "${mountPoint}/Windows/System32/license.rtf" 2>/dev/null | head -1 || echo ""`);
+                if (osRelease.includes('Ubuntu') || osRelease.includes('Debian')) {
+                    osDetected = osRelease.split('\n')[0];
+                } else if (osRelease.includes('Windows') || osRelease.includes('Microsoft')) {
+                    osDetected = 'Windows';
+                }
+            } catch (err) {
+                console.log('[DISK SCAN] Impossible de détecter l\'OS');
+            }
+
+            // Compter les fichiers
+            const { stdout: fileCount } = await execPromise(`find "${mountPoint}" -type f 2>/dev/null | wc -l`);
+
+            // Parser les menaces
+            const threats = [];
+            const lines = scanOutput.split('\n');
+            for (const line of lines) {
+                if (line.includes('FOUND')) {
+                    const parts = line.split(':');
+                    if (parts.length >= 2) {
+                        threats.push({
+                            file: parts[0].trim(),
+                            threat: parts[1].trim()
+                        });
+                    }
+                }
+            }
+
+            // Démonter et nettoyer
+            await execPromise(`umount ${mountPoint}`).catch(() => {});
+            await execPromise(`kpartx -d ${loop}`).catch(() => {});
+            await execPromise(`losetup -d ${loop}`).catch(() => {});
+            await execPromise(`rmdir ${mountPoint}`).catch(() => {});
+
+            const scanData = {
+                scan_id: scanId,
+                scan_type: 'disk_image',
+                file_path: filePath,
+                timestamp,
+                os_detected: osDetected,
+                total_files: parseInt(fileCount.trim()),
+                threats_found: threats.length,
+                threats: threats,
+                status: 'completed'
+            };
+
+            await db.saveScan(scanData);
+
+            res.json({
+                success: true,
+                scan_id: scanId,
+                ...scanData
+            });
+
+        } catch (mountError) {
+            // Nettoyer en cas d'erreur
+            await execPromise(`umount ${mountPoint} 2>/dev/null`).catch(() => {});
+            await execPromise(`rmdir ${mountPoint} 2>/dev/null`).catch(() => {});
+            throw mountError;
+        }
+
+    } catch (error) {
+        console.error('[DISK SCAN] Erreur:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Scan de memory dump (RAM)
+app.post('/api/pc/scan/memory-dump', async (req, res) => {
+    try {
+        const { filePath } = req.body;
+
+        if (!filePath) {
+            return res.status(400).json({ error: 'Chemin du fichier requis' });
+        }
+
+        const scanId = uuidv4();
+        const timestamp = new Date().toISOString();
+        const workDir = `/tmp/memory_scan_${scanId}`;
+
+        await execPromise(`mkdir -p ${workDir}`);
+
+        console.log(`[MEMORY SCAN] Analyse de ${filePath}`);
+
+        // Vérifier si Volatility 3 est installé
+        const { stdout: vol3Check } = await execPromise('which vol3 || which volatility3 || echo "not_found"');
+        const vol3Command = vol3Check.trim() === 'not_found' ? null : vol3Check.trim();
+
+        if (!vol3Command) {
+            return res.status(500).json({
+                error: 'Volatility 3 non installé. Installez-le avec: pip3 install volatility3'
+            });
+        }
+
+        // Détecter le profil OS
+        console.log('[MEMORY SCAN] Détection du profil OS...');
+        const { stdout: bannerOutput } = await execPromise(
+            `${vol3Command} -f "${filePath}" banners.Banners 2>&1 || echo "Profile detection failed"`,
+            { timeout: 120000 }
+        );
+
+        let osProfile = 'Unknown';
+        if (bannerOutput.includes('Windows')) {
+            osProfile = 'Windows';
+        } else if (bannerOutput.includes('Linux')) {
+            osProfile = 'Linux';
+        }
+
+        // Lister les processus
+        console.log('[MEMORY SCAN] Extraction des processus...');
+        const { stdout: pslistOutput } = await execPromise(
+            `${vol3Command} -f "${filePath}" windows.pslist 2>&1 || ${vol3Command} -f "${filePath}" linux.pslist 2>&1 || echo "No processes"`,
+            { timeout: 180000 }
+        );
+
+        // Parser les processus suspects
+        const suspiciousProcesses = [];
+        const psLines = pslistOutput.split('\n');
+        const suspiciousNames = ['mimikatz', 'psexec', 'procdump', 'pwdump', 'nc.exe', 'netcat', 'meterpreter'];
+
+        for (const line of psLines) {
+            const lower = line.toLowerCase();
+            for (const suspect of suspiciousNames) {
+                if (lower.includes(suspect)) {
+                    suspiciousProcesses.push(line.trim());
+                    break;
+                }
+            }
+        }
+
+        // Scanner avec ClamAV les processus extraits
+        console.log('[MEMORY SCAN] Scan ClamAV sur la mémoire...');
+        const { stdout: clamOutput } = await execPromise(
+            `clamscan "${filePath}" 2>&1 || echo "Scan completed"`,
+            { timeout: 600000 }
+        );
+
+        const threats = [];
+        if (clamOutput.includes('FOUND')) {
+            threats.push({
+                type: 'memory_malware',
+                description: 'Malware détecté dans le dump mémoire',
+                details: clamOutput
+            });
+        }
+
+        // Nettoyer
+        await execPromise(`rm -rf ${workDir}`).catch(() => {});
+
+        const scanData = {
+            scan_id: scanId,
+            scan_type: 'memory_dump',
+            file_path: filePath,
+            timestamp,
+            os_profile: osProfile,
+            total_processes: psLines.length - 3, // Moins les headers
+            suspicious_processes: suspiciousProcesses,
+            threats_found: threats.length + suspiciousProcesses.length,
+            threats: threats,
+            status: 'completed'
+        };
+
+        await db.saveScan(scanData);
+
         res.json({
             success: true,
-            message: 'Scan PC - À implémenter',
+            scan_id: scanId,
+            ...scanData
+        });
+
+    } catch (error) {
+        console.error('[MEMORY SCAN] Erreur:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Upload de fichier pour scan (DD ou Memory Dump)
+const multer = require('multer');
+const upload = multer({
+    dest: '/tmp/station-uploads/',
+    limits: { fileSize: 50 * 1024 * 1024 * 1024 } // 50 GB max
+});
+
+app.post('/api/pc/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Aucun fichier uploadé' });
+        }
+
+        const uploadedPath = req.file.path;
+        const originalName = req.file.originalname;
+
+        res.json({
+            success: true,
+            file_path: uploadedPath,
+            file_name: originalName,
+            file_size: req.file.size
+        });
+    } catch (error) {
+        console.error('[UPLOAD] Erreur:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Scan PC via EDR (déjà existant, juste référencé ici)
+app.post('/api/workstation/scan', async (req, res) => {
+    try {
+        // TODO: Implémenter le scan PC via agent EDR
+        res.json({
+            success: true,
+            message: 'Scan PC EDR - À implémenter avec agent',
             issues: []
         });
     } catch (error) {

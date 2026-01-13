@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import USBScanner from './components/pages/ScanTools/USBScanner';
-import RemotePCScanner from './components/pages/ScanTools/RemotePCScanner';
+import AdvancedPCScanner from './components/pages/ScanTools/AdvancedPCScanner';
 import USBTransfer from './components/pages/ScanTools/USBTransfer';
 import AdminPanel from './components/pages/Admin/AdminPanel';
 import GlobalKeyboard from './components/GlobalKeyboard/GlobalKeyboard';
@@ -61,7 +61,7 @@ function App() {
       <main className="app-main">
         {activeTab === 'usb' && <USBScanner />}
         {activeTab === 'transfer' && <USBTransfer />}
-        {activeTab === 'pc' && <RemotePCScanner />}
+        {activeTab === 'pc' && <AdvancedPCScanner />}
       </main>
 
       <footer className="app-footer">

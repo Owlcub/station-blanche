@@ -1,0 +1,76 @@
+.advanced-pc-scanner {
+  width: 100%;
+}
+
+.scanner-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.scanner-tab {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: white;
+  border: 3px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 100px;
+}
+
+.scanner-tab:hover {
+  border-color: #10b981;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.scanner-tab.active {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #f0fff4 0%, #d1fae5 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.scanner-tab svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+}
+
+.tab-title {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.tab-desc {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.scanner-content {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .scanner-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .scanner-tab {
+    min-height: 80px;
+  }
+
+  .tab-title {
+    font-size: 1rem;
+  }
+}

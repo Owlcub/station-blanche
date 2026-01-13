@@ -30,7 +30,7 @@ if [ -f /etc/debian_version ]; then
     echo "Distribution Debian/Ubuntu détectée"
     apt-get update
 
-    PACKAGES="nodejs npm python3 python3-pip clamav clamav-daemon rsync util-linux"
+    PACKAGES="nodejs npm python3 python3-pip clamav clamav-daemon rsync util-linux kpartx"
 
     # Ajouter les paquets pour le mode kiosque
     if [ "$INSTALL_MODE" = "1" ]; then
@@ -78,6 +78,13 @@ cd "$PROJECT_DIR/backend"
 if pip3 install -r requirements.txt 2>&1 | grep -q "externally-managed-environment"; then
     echo "⚠️  Environnement Python géré, installation avec --break-system-packages"
     pip3 install --break-system-packages -r requirements.txt
+fi
+
+echo ""
+echo "📦 Installation de Volatility 3 (analyse de memory dumps)..."
+if pip3 install volatility3 2>&1 | grep -q "externally-managed-environment"; then
+    echo "⚠️  Installation de Volatility 3 avec --break-system-packages"
+    pip3 install --break-system-packages volatility3
 fi
 
 echo ""
