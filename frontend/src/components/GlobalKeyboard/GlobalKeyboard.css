@@ -1,0 +1,56 @@
+.global-keyboard-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+}
+
+.global-keyboard-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+}
+
+.global-keyboard-wrapper {
+  position: relative;
+  z-index: 10001;
+  background: white;
+  padding: 1rem;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.keyboard-close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 10002;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+}
+
+.keyboard-close-btn:hover {
+  background: #c53030;
+}
+
+@media (max-width: 768px) {
+  .global-keyboard-wrapper {
+    max-height: 60vh;
+  }
+}

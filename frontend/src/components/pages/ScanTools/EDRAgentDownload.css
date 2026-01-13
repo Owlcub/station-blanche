@@ -1,0 +1,256 @@
+.edr-agent-download {
+  width: 100%;
+}
+
+.edr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.edr-alert {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #fffbeb;
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  align-items: flex-start;
+}
+
+.edr-alert h3 {
+  margin: 0 0 0.5rem 0;
+  color: #92400e;
+  font-size: 1.125rem;
+}
+
+.edr-alert p {
+  margin: 0;
+  color: #78350f;
+  line-height: 1.6;
+}
+
+.edr-features {
+  padding: 1.5rem;
+  background: #f0fff4;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+}
+
+.edr-features h3 {
+  margin: 0 0 1rem 0;
+  color: #059669;
+  font-size: 1.125rem;
+}
+
+.edr-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.edr-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #065f46;
+  font-size: 1rem;
+}
+
+.os-selector h3 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.os-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.os-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: white;
+  border: 3px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 120px;
+}
+
+.os-btn:hover {
+  border-color: #10b981;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.os-btn.active {
+  border-color: #10b981;
+  background: #f0fff4;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.os-icon {
+  font-size: 3rem;
+}
+
+.os-name {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1.125rem;
+  text-align: center;
+}
+
+.agent-details {
+  padding: 1.5rem;
+  background: #f7fafc;
+  border-radius: 12px;
+}
+
+.agent-details h4 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.detail-value {
+  color: #2d3748;
+}
+
+.detail-value code {
+  background: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  color: #10b981;
+  border: 1px solid #e2e8f0;
+}
+
+.installation-steps {
+  padding: 1.5rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.installation-steps h3 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.installation-steps ol {
+  margin: 0;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.installation-steps li {
+  color: #4a5568;
+  line-height: 1.6;
+}
+
+.installation-steps strong {
+  color: #10b981;
+}
+
+.download-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f0fff4 0%, #d1fae5 100%);
+  border-radius: 12px;
+}
+
+.manual-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: #10b981;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+}
+
+.manual-btn:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.edr-note {
+  padding: 1rem;
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 6px;
+}
+
+.edr-note p {
+  margin: 0;
+  color: #1e3a8a;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.edr-note strong {
+  color: #1e40af;
+}
+
+@media (max-width: 768px) {
+  .os-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .os-btn {
+    min-height: 100px;
+  }
+
+  .os-icon {
+    font-size: 2.5rem;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .installation-steps ol {
+    padding-left: 1.25rem;
+  }
+}

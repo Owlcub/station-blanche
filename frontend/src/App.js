@@ -4,6 +4,7 @@ import USBScanner from './components/pages/ScanTools/USBScanner';
 import RemotePCScanner from './components/pages/ScanTools/RemotePCScanner';
 import USBTransfer from './components/pages/ScanTools/USBTransfer';
 import AdminPanel from './components/pages/Admin/AdminPanel';
+import GlobalKeyboard from './components/GlobalKeyboard/GlobalKeyboard';
 import { Usb, Monitor, ArrowLeftRight, Settings } from 'lucide-react';
 
 function App() {
@@ -69,6 +70,9 @@ function App() {
           Développé par <strong>CupaDev</strong>
         </p>
       </footer>
+
+      {/* Clavier virtuel global pour écrans tactiles */}
+      <GlobalKeyboard />
     </div>
   );
 }

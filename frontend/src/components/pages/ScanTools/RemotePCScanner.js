@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import './RemotePCScanner.css';
 import { Card, Button, Loading } from '../../design-system';
 import { Monitor, Play, PlayCircle, CheckCircle } from 'lucide-react';
+import EDRAgentDownload from './EDRAgentDownload';
 
 const RemotePCScanner = () => {
   const [scanning, setScanning] = useState(false);
@@ -10,6 +11,7 @@ const RemotePCScanner = () => {
   const [scanResults, setScanResults] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAgentDownload, setShowAgentDownload] = useState(true);
 
   useEffect(() => {
     loadAgents();
@@ -77,6 +79,11 @@ const RemotePCScanner = () => {
         <Loading text="Chargement de la liste des agents..." />
       </Card>
     );
+  }
+
+  // Si aucun agent ET affichage download activé
+  if (showAgentDownload && agents.length === 0) {
+    return <EDRAgentDownload onAgentInstalled={() => setShowAgentDownload(false)} />;
   }
 
   return (

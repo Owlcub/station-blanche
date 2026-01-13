@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './AdminPanel.css';
 import { Lock, Activity, RefreshCw, Download, Terminal, Settings } from 'lucide-react';
-import API_URL from '../../../config';
+
+const API_URL = 'http://localhost:8000';
 
 function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -17,6 +18,7 @@ function AdminPanel() {
   const [frontendLogs, setFrontendLogs] = useState('');
   const [activeTab, setActiveTab] = useState('stats');
 
+  // Vérifier l'authentification au chargement
   useEffect(() => {
     checkAuth();
   }, []);
@@ -33,7 +35,7 @@ function AdminPanel() {
   };
 
   const handleLogin = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
+    e.preventDefault();
     setError('');
     setLoading(true);
 
@@ -102,7 +104,7 @@ function AdminPanel() {
 
     setLoading(true);
     try {
-      await axios.post(`${API_URL}/api/admin/update`, {}, {
+      const response = await axios.post(`${API_URL}/api/admin/update`, {}, {
         withCredentials: true
       });
       alert('Mise à jour réussie ! Redémarrez les services.');
@@ -172,6 +174,7 @@ function AdminPanel() {
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
                 autoComplete="username"
+                autoFocus
               />
             </div>
 
