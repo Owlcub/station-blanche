@@ -26,9 +26,10 @@
   --text-disabled: #94a3b8;     /* Gris clair */
 
   /* === COULEURS D'ACCENT === */
-  --accent-blue: #3b82f6;
-  --accent-blue-hover: #2563eb;
-  --accent-blue-light: #60a5fa;
+  /* Vert Owlcub comme couleur primaire */
+  --accent-blue: #10b981;
+  --accent-blue-hover: #059669;
+  --accent-blue-light: #34d399;
 
   --accent-green: #10b981;
   --accent-green-hover: #059669;

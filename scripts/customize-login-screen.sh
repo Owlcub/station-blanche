@@ -83,8 +83,8 @@ fi
 # Créer/modifier la configuration
 cat > "$LIGHTDM_CONF" << 'EOF'
 [greeter]
-# Fond d'écran
-background = #667eea
+# Fond d'écran vert Owlcub
+background = #10b981
 theme-name = Adwaita
 icon-theme-name = Adwaita
 font-name = Sans 11
@@ -117,10 +117,10 @@ fi
 mkdir -p /etc/lightdm/gtk-greeter.css.d
 
 cat > /etc/lightdm/gtk-greeter.css.d/owlcub-theme.css << 'EOF'
-/* Theme Owlcub Station Blanche */
+/* Theme Owlcub Station Blanche - Vert #10b981 */
 
 #panel_window {
-    background-color: rgba(102, 126, 234, 0.95);
+    background-color: rgba(16, 185, 129, 0.95);
     color: #ffffff;
 }
 
@@ -138,12 +138,12 @@ cat > /etc/lightdm/gtk-greeter.css.d/owlcub-theme.css << 'EOF'
 
 #login_window #user_image {
     border-radius: 50%;
-    border: 3px solid #667eea;
+    border: 3px solid #10b981;
 }
 
 .lightdm-gtk-greeter {
     background-image: none;
-    background-color: #667eea;
+    background-color: #10b981;
 }
 EOF
 
