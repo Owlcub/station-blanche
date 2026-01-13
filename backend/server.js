@@ -111,6 +111,7 @@ const db = new Database();
 // Stocker les progressions de scan
 const usbScanProgress = new Map();
 const transferProgress = new Map();
+let currentTransferId = null; // Stocker l'ID du transfert en cours
 
 // ==================== USB ENDPOINTS ====================
 
@@ -483,6 +484,7 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         }
 
         const transferId = uuidv4();
+        currentTransferId = transferId; // Enregistrer comme transfert actif
         const timestamp = new Date().toISOString();
 
         // Créer les points de montage
@@ -507,12 +509,38 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         }
 
         if (options.scan_before_transfer !== false) {
-            transferProgress.set(transferId, { status: 'scanning', percent: 10 });
+            transferProgress.set(transferId, {
+                status: 'scanning',
+                percent: 5,
+                step: 'Comptage des fichiers à scanner...'
+            });
 
+            // Compter les fichiers à scanner
+            const { stdout: fileCountStr } = await execPromise(`find ${scanPaths} -type f 2>/dev/null | wc -l`);
+            const totalFiles = parseInt(fileCountStr.trim()) || 0;
+
+            transferProgress.set(transferId, {
+                status: 'scanning',
+                percent: 10,
+                step: `Scan antivirus (${totalFiles} fichiers)...`,
+                total_files: totalFiles,
+                scanned_files: 0
+            });
+
+            // Lancer le scan avec progression
             const scanResult = await execPromise(
                 `timeout 300 clamscan -r -i --no-summary ${scanPaths}`,
                 { timeout: 305000 }
             ).catch(e => ({ stdout: e.stdout || '', stderr: e.stderr || '' }));
+
+            // Simuler progression pendant le scan (puisque clamscan ne donne pas de progression directe)
+            transferProgress.set(transferId, {
+                status: 'scanning',
+                percent: 35,
+                step: 'Analyse terminée, vérification des menaces...',
+                total_files: totalFiles,
+                scanned_files: totalFiles
+            });
 
             if (scanResult.stdout.includes('FOUND')) {
                 // Menaces détectées
@@ -526,10 +554,26 @@ app.post('/api/usb/transfer/start', async (req, res) => {
                     scan_result: scanResult.stdout
                 });
             }
+
+            transferProgress.set(transferId, {
+                status: 'scan_complete',
+                percent: 40,
+                step: 'Scan terminé - Aucune menace détectée'
+            });
+        } else {
+            transferProgress.set(transferId, {
+                status: 'mounting',
+                percent: 5,
+                step: 'Montage des clés USB...'
+            });
         }
 
         // Effectuer le transfert avec rsync
-        transferProgress.set(transferId, { status: 'transferring', percent: 30 });
+        transferProgress.set(transferId, {
+            status: 'transferring',
+            percent: 45,
+            step: 'Transfert des fichiers en cours...'
+        });
 
         let rsyncCommand;
         if (selectedPaths.length > 0) {
@@ -546,7 +590,11 @@ app.post('/api/usb/transfer/start', async (req, res) => {
             { timeout: 3600000 } // 1h max
         );
 
-        transferProgress.set(transferId, { status: 'verifying', percent: 80 });
+        transferProgress.set(transferId, {
+            status: 'verifying',
+            percent: 80,
+            step: 'Vérification de l\'intégrité...'
+        });
 
         // Vérifier l'intégrité
         let sourceCount, destCount;
@@ -582,7 +630,13 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         };
 
         await db.saveTransfer(transferData);
-        transferProgress.set(transferId, { status: 'completed', percent: 100 });
+        transferProgress.set(transferId, {
+            status: 'completed',
+            percent: 100,
+            step: 'Transfert terminé avec succès !'
+        });
+
+        currentTransferId = null; // Réinitialiser après transfert
 
         res.json({
             success: true,
@@ -596,10 +650,19 @@ app.post('/api/usb/transfer/start', async (req, res) => {
     }
 });
 
-// Statut d'un transfert
+// Statut d'un transfert spécifique
 app.get('/api/usb/transfer/status/:id', (req, res) => {
     const { id } = req.params;
     const status = transferProgress.get(id) || { status: 'not_found', percent: 0 };
+    res.json(status);
+});
+
+// Statut du transfert en cours (pour polling)
+app.get('/api/usb/transfer/status/current', (req, res) => {
+    if (!currentTransferId) {
+        return res.json({ status: 'none', percent: 0 });
+    }
+    const status = transferProgress.get(currentTransferId) || { status: 'unknown', percent: 0 };
     res.json(status);
 });
 

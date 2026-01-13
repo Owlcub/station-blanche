@@ -19,6 +19,7 @@ const USBTransfer = () => {
   const [currentPath, setCurrentPath] = useState('');
   const [selectedPaths, setSelectedPaths] = useState([]);
   const [loadingBrowser, setLoadingBrowser] = useState(false);
+  const [transferProgress, setTransferProgress] = useState(null);
 
   useEffect(() => {
     detectUSB();
@@ -112,6 +113,7 @@ const USBTransfer = () => {
 
     setTransferring(true);
     setTransferResult(null);
+    setTransferProgress({ percent: 0, step: 'Initialisation...' });
 
     try {
       const response = await fetch(`${API_URL}/api/usb/transfer/start`, {
@@ -137,7 +139,7 @@ const USBTransfer = () => {
           integrity_ok: data.integrity_ok
         });
         loadHistory();
-        setSelectedPaths([]); // Reset sélection
+        setSelectedPaths([]);
         setShowFileBrowser(false);
       } else {
         setTransferResult({
@@ -154,8 +156,29 @@ const USBTransfer = () => {
       });
     } finally {
       setTransferring(false);
+      setTransferProgress(null);
     }
   };
+
+  // Polling de la progression pendant le transfert
+  useEffect(() => {
+    if (!transferring) return;
+
+    const pollProgress = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/usb/transfer/status/current`);
+        const data = await response.json();
+        if (data.percent !== undefined) {
+          setTransferProgress(data);
+        }
+      } catch (error) {
+        console.error('Erreur polling progression:', error);
+      }
+    };
+
+    const interval = setInterval(pollProgress, 500); // Poll toutes les 500ms
+    return () => clearInterval(interval);
+  }, [transferring]);
 
   return (
     <Card icon={ArrowLeftRight} title="Transfert sécurisé entre 2 USB">
@@ -307,10 +330,25 @@ const USBTransfer = () => {
               </Button>
             </div>
 
-            {transferring && (
+            {transferring && transferProgress && (
               <div className="transfer-loading">
-                <Loading text="Transfert en cours..." />
-                {scanBeforeTransfer && <p>Scan antivirus de la source...</p>}
+                <div className="progress-container">
+                  <div className="progress-header">
+                    <span className="progress-title">{transferProgress.step || 'Transfert en cours...'}</span>
+                    <span className="progress-percent">{transferProgress.percent || 0}%</span>
+                  </div>
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${transferProgress.percent || 0}%` }}
+                    />
+                  </div>
+                  {transferProgress.total_files && (
+                    <p className="progress-details">
+                      {transferProgress.scanned_files || 0} / {transferProgress.total_files} fichiers scannés
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
