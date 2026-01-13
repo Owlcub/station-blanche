@@ -203,12 +203,19 @@ EOF
     echo "  ✅ Navigateur en mode kiosque configuré"
     echo ""
     echo "Commandes utiles :"
-    echo "  - Redémarrer backend:  sudo systemctl restart station-blanche-backend"
-    echo "  - Redémarrer frontend: sudo systemctl restart station-blanche-frontend"
-    echo "  - Voir les logs:       sudo journalctl -u station-blanche-backend -f"
+    echo "  - Redémarrer backend:  systemctl restart station-blanche-backend"
+    echo "  - Redémarrer frontend: systemctl restart station-blanche-frontend"
+    echo "  - Voir les logs:       journalctl -u station-blanche-backend -f"
+    echo "  - Mettre à jour:       cd /opt/station-blanche && ./scripts/update.sh"
     echo "  - Accès manuel:        http://localhost:3000"
     echo ""
-    echo "⚠️  Redémarrez le système pour lancer le mode kiosque complet : reboot"
+    if command -v systemctl &> /dev/null; then
+        echo "⚠️  Redémarrez le système pour lancer le mode kiosque complet : systemctl reboot"
+    elif [ -x /sbin/reboot ]; then
+        echo "⚠️  Redémarrez le système pour lancer le mode kiosque complet : /sbin/reboot"
+    else
+        echo "⚠️  Redémarrez le système pour lancer le mode kiosque complet : reboot"
+    fi
     echo ""
 
 else
