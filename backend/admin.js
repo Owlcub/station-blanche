@@ -11,7 +11,7 @@ const router = express.Router();
 // Password: CyberBox-Station-Admin
 // Hash généré avec bcrypt rounds=10
 const ADMIN_USERNAME = 'admin-station';
-const ADMIN_PASSWORD_HASH = '$2b$10$YGqZzx4J5kN7mP9qR2sT3uK8vL6wN9xA3bC5dE7fG9hI1jK3lM5nO';
+const ADMIN_PASSWORD_HASH = '$2b$10$P4QaFkKDz2cWOX2mMojK3eLzUwrbTEWwiRNeZcBnwsjQ6hESDTbAC';
 const PASSWORD_FILE = '/var/lib/cyberbox-station/admin_password.hash';
 
 // Middleware pour vérifier l'authentification
