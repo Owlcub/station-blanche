@@ -1,0 +1,248 @@
+.usb-transfer {
+  width: 100%;
+}
+
+.usb-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #718096;
+}
+
+.usb-empty svg {
+  color: #cbd5e0;
+  margin-bottom: 1rem;
+}
+
+.usb-empty p {
+  font-size: 1.125rem;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.usb-empty span {
+  font-size: 0.875rem;
+  color: #a0aec0;
+}
+
+.transfer-options {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f7fafc;
+  border-radius: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.device-selection {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.device-column h3 {
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.devices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.device-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.device-card:hover {
+  border-color: #667eea;
+  transform: translateX(4px);
+}
+
+.device-card.selected {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.device-card .device-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.device-card .device-name {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.device-card .device-size {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.transfer-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+}
+
+.transfer-action {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.transfer-loading {
+  text-align: center;
+  padding: 2rem;
+  background: #f0f4ff;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.transfer-loading p {
+  margin-top: 1rem;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.transfer-result {
+  text-align: center;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.transfer-result.success {
+  background: #f0fff4;
+  border: 2px solid #9ae6b4;
+}
+
+.transfer-result.error {
+  background: #fff5f5;
+  border: 2px solid #feb2b2;
+}
+
+.transfer-result svg {
+  margin-bottom: 1rem;
+}
+
+.transfer-result.success svg {
+  color: #48bb78;
+}
+
+.transfer-result.error svg {
+  color: #f56565;
+}
+
+.transfer-result h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+}
+
+.transfer-result p {
+  margin: 0.5rem 0;
+  color: #4a5568;
+}
+
+.scan-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.scan-details h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.scan-details pre {
+  margin: 0;
+  padding: 0.5rem;
+  background: #f7fafc;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  overflow-x: auto;
+}
+
+.transfer-history {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e2e8f0;
+}
+
+.transfer-history h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  color: #2d3748;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.history-table thead {
+  background: #f7fafc;
+}
+
+.history-table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 0.875rem;
+}
+
+.history-table td {
+  padding: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  color: #2d3748;
+  font-size: 0.875rem;
+}
+
+.history-table tbody tr:hover {
+  background: #f7fafc;
+}
+
+@media (max-width: 768px) {
+  .device-selection {
+    grid-template-columns: 1fr;
+  }
+
+  .transfer-arrow {
+    transform: rotate(90deg);
+    margin: 1rem 0;
+  }
+}

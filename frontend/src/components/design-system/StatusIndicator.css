@@ -1,0 +1,57 @@
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-sm .status-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.status-lg .status-dot {
+  width: 10px;
+  height: 10px;
+}
+
+.status-dot-success {
+  background: var(--success);
+  box-shadow: 0 0 0 2px var(--success-bg);
+}
+
+.status-dot-danger {
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--danger-bg);
+}
+
+.status-dot-warning {
+  background: var(--warning);
+  box-shadow: 0 0 0 2px var(--warning-bg);
+}
+
+.status-dot-default {
+  background: var(--text-muted);
+  box-shadow: 0 0 0 2px var(--bg-tertiary);
+}
+
+.status-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

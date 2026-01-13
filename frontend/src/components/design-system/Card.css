@@ -1,0 +1,82 @@
+/* Card Component */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-base);
+}
+
+.card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-header-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.card-icon {
+  color: var(--accent-blue);
+  flex-shrink: 0;
+}
+
+.card-header-text {
+  flex: 1;
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.card-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin: var(--spacing-xs) 0 0 0;
+}
+
+.card-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.card-body {
+  padding: var(--spacing-lg);
+}
+
+/* Variants */
+.card-highlight {
+  border-color: var(--accent-blue);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-danger {
+  border-color: var(--danger);
+}
+
+.card-success {
+  border-color: var(--success);
+}
+
+.card-warning {
+  border-color: var(--warning);
+}
+
+/* Compact variant */
+.card-compact .card-header,
+.card-compact .card-body {
+  padding: var(--spacing-md);
+}
