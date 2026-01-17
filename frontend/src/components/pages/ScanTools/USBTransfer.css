@@ -424,6 +424,230 @@
   color: #10b981;
 }
 
+/* Workflow guidé */
+.usb-transfer-guided {
+  width: 100%;
+}
+
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  position: relative;
+  opacity: 0.4;
+  transition: all 0.3s;
+}
+
+.step::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 60%;
+  width: 80%;
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 0;
+}
+
+.step:last-child::after {
+  display: none;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.step.active::after {
+  background: #10b981;
+}
+
+.step.current .step-number {
+  background: #10b981;
+  color: white;
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #a0aec0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+  z-index: 1;
+  transition: all 0.3s;
+}
+
+.step.active .step-number {
+  background: #d1fae5;
+  color: #10b981;
+}
+
+.step-label {
+  font-size: 0.75rem;
+  color: #718096;
+  font-weight: 500;
+  text-align: center;
+}
+
+.step.current .step-label {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.step-content {
+  min-height: 400px;
+}
+
+.step-view {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.instruction-banner {
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f0fff4 0%, #d1fae5 100%);
+  border: 3px solid #10b981;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.instruction-banner.success {
+  background: linear-gradient(135deg, #f0fff4 0%, #d1fae5 100%);
+  border-color: #10b981;
+}
+
+.instruction-banner.error {
+  background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+  border-color: #ef4444;
+}
+
+.instruction-banner svg {
+  margin-bottom: 1rem;
+}
+
+.instruction-banner h2 {
+  margin: 0.5rem 0;
+  color: #065f46;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.instruction-banner.error h2 {
+  color: #991b1b;
+}
+
+.instruction-banner p {
+  margin: 0.5rem 0 0 0;
+  color: #047857;
+  font-size: 1.125rem;
+}
+
+.instruction-banner.error p {
+  color: #b91c1c;
+}
+
+.waiting-message {
+  text-align: center;
+  padding: 3rem;
+}
+
+.scan-summary {
+  text-align: center;
+  padding: 2rem;
+}
+
+.scan-summary svg {
+  margin-bottom: 1rem;
+}
+
+.scan-summary h3 {
+  margin: 1rem 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #2d3748;
+}
+
+.scan-summary p {
+  margin: 0.5rem 0;
+  color: #718096;
+  font-size: 1.125rem;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.completion-message {
+  text-align: center;
+  padding: 2rem;
+  background: #f7fafc;
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+.completion-message h3 {
+  margin: 0 0 0.5rem 0;
+  color: #2d3748;
+  font-size: 1.25rem;
+}
+
+.completion-message p {
+  margin: 0;
+  color: #718096;
+  font-size: 1rem;
+}
+
+.device-card.clickable {
+  cursor: pointer;
+  min-height: 80px;
+  touch-action: manipulation;
+}
+
+.device-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.selected-info {
+  text-align: center;
+  font-weight: 600;
+  color: #10b981;
+  margin-top: 1rem;
+  font-size: 1.125rem;
+}
+
 @media (max-width: 768px) {
   .device-selection {
     grid-template-columns: 1fr;
@@ -440,5 +664,28 @@
 
   .file-list {
     max-height: 300px;
+  }
+
+  .step-indicator {
+    overflow-x: auto;
+    padding: 1rem;
+  }
+
+  .step-label {
+    font-size: 0.65rem;
+  }
+
+  .step-number {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+  }
+
+  .instruction-banner h2 {
+    font-size: 1.25rem;
+  }
+
+  .instruction-banner p {
+    font-size: 1rem;
   }
 }

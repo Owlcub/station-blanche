@@ -313,15 +313,43 @@ app.post('/api/usb/scan', async (req, res) => {
 app.post('/api/usb/quarantine', async (req, res) => {
     try {
         const { device, files } = req.body;
+        if (!files || files.length === 0) {
+            return res.status(400).json({ error: 'Aucun fichier à mettre en quarantaine' });
+        }
+
         const quarantineDir = '/var/lib/cyberbox-station/quarantine';
         await execPromise(`mkdir -p ${quarantineDir}`);
 
-        for (const file of files) {
-            const safeName = file.file.replace(/\//g, '_');
-            await execPromise(`mv "${file.file}" "${quarantineDir}/${safeName}"`);
+        // Obtenir le point de montage du device
+        const { stdout: mountCheck } = await execPromise(`mount | grep "${device}" || echo ""`);
+        const matches = mountCheck.match(/on\s+(.+?)\s+type/);
+
+        if (!matches || !matches[1]) {
+            return res.status(400).json({ error: 'Device non monté' });
         }
 
-        res.json({ success: true, message: `${files.length} fichier(s) mis en quarantaine` });
+        const mountPoint = matches[1];
+        let quarantinedCount = 0;
+
+        for (const file of files) {
+            try {
+                // file peut être soit un objet avec .file ou .path, soit une string
+                const filePath = typeof file === 'string' ? file : (file.file || file.path);
+                if (!filePath) continue;
+
+                // Construire le chemin complet
+                const fullPath = filePath.startsWith('/') ? `${mountPoint}${filePath}` : `${mountPoint}/${filePath}`;
+                const safeName = `${Date.now()}_${filePath.replace(/\//g, '_')}`;
+
+                await execPromise(`cp -r "${fullPath}" "${quarantineDir}/${safeName}"`);
+                await execPromise(`rm -rf "${fullPath}"`);
+                quarantinedCount++;
+            } catch (e) {
+                console.error(`Erreur quarantaine fichier:`, e.message);
+            }
+        }
+
+        res.json({ success: true, message: `${quarantinedCount} fichier(s) mis en quarantaine` });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
