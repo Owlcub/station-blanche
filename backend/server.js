@@ -9,6 +9,19 @@ const { v4: uuidv4 } = require('uuid');
 
 const execPromise = util.promisify(exec);
 
+// Fonction de log qui écrit dans stderr (capturé par journalctl) ET dans un fichier
+const LOG_FILE = '/tmp/station-blanche-debug.log';
+const serverLog = (message) => {
+    const timestamp = new Date().toISOString();
+    const logLine = `${timestamp} ${message}`;
+    console.error(logLine); // stderr = capturé par journalctl
+    try {
+        require('fs').appendFileSync(LOG_FILE, logLine + '\n');
+    } catch (e) {
+        // Ignore si échec d'écriture
+    }
+};
+
 const app = express();
 const PORT = process.env.PORT || 8000;
 
@@ -366,6 +379,8 @@ app.post('/api/usb/scan', async (req, res) => {
 app.post('/api/usb/scan-transfer', async (req, res) => {
     try {
         const { device } = req.body;
+        serverLog(`[SCAN-TRANSFER] Request for device: ${device}`);
+
         if (!device) {
             return res.status(400).json({ error: 'Le device USB est requis' });
         }
@@ -377,21 +392,25 @@ app.post('/api/usb/scan-transfer', async (req, res) => {
         try {
             // Vérifier si déjà monté (chercher device et partitions)
             const { stdout: mountCheck } = await execPromise(`mount | grep -E "${device}[0-9]?\\s" || echo ""`);
+            serverLog(`[SCAN-TRANSFER] Mount check: ${mountCheck.trim()}`);
             if (mountCheck.trim()) {
                 const matches = mountCheck.match(/on\s+(.+?)\s+type/);
                 if (matches && matches[1]) {
                     mount_point = matches[1];
+                    serverLog(`[SCAN-TRANSFER] Using existing mount: ${mount_point}`);
                 }
             } else {
                 // Monter le device en lecture-écriture (nécessaire pour le transfert ultérieur)
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '_');
                 mount_point = `/tmp/usb_transfer_${timestamp}`;
+                serverLog(`[SCAN-TRANSFER] Mounting to: ${mount_point}`);
                 await execPromise(`mkdir -p ${mount_point}`);
                 try {
                     await execPromise(`mount ${device} ${mount_point}`, { timeout: 10000 });
                 } catch (e) {
                     await execPromise(`mount ${device}1 ${mount_point}`, { timeout: 10000 });
                 }
+                serverLog(`[SCAN-TRANSFER] Mounted successfully`);
             }
 
             // Scan ClamAV rapide (seulement ClamAV, pas les détections heuristiques)
