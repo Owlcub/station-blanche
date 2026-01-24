@@ -102,23 +102,25 @@ else
     echo "ℹ️  Configuration kernel.printk déjà présente"
 fi
 
-# Optionnel: Ajouter un logo de boot (Plymouth)
+# Installation du thème Plymouth personnalisé Owlcub
 echo ""
-echo "🎨 Installation de Plymouth (écran de démarrage)..."
-if [ -f /etc/debian_version ]; then
-    if ! command -v plymouth &> /dev/null; then
-        apt-get update > /dev/null 2>&1
-        apt-get install -y plymouth plymouth-themes > /dev/null 2>&1
-        echo "✅ Plymouth installé"
-
-        # Utiliser un thème simple
-        plymouth-set-default-theme -R spinner 2>/dev/null || true
-        echo "✅ Thème Plymouth configuré"
-    else
-        echo "ℹ️  Plymouth déjà installé"
-    fi
+echo "🎨 Installation du thème Plymouth Owlcub..."
+if [ -f "/opt/station-blanche/scripts/install-plymouth-theme.sh" ]; then
+    /opt/station-blanche/scripts/install-plymouth-theme.sh
+elif [ -f "$(dirname "$0")/install-plymouth-theme.sh" ]; then
+    "$(dirname "$0")/install-plymouth-theme.sh"
 else
-    echo "⚠️  Plymouth non installé (distribution non Debian/Ubuntu)"
+    echo "⚠️  Script de thème Plymouth non trouvé"
+    echo "   Installation de Plymouth basique..."
+    if [ -f /etc/debian_version ]; then
+        if ! command -v plymouth &> /dev/null; then
+            apt-get update > /dev/null 2>&1
+            apt-get install -y plymouth plymouth-themes > /dev/null 2>&1
+            echo "✅ Plymouth installé"
+        fi
+        plymouth-set-default-theme -R spinner 2>/dev/null || true
+        echo "✅ Thème Plymouth par défaut configuré"
+    fi
 fi
 
 echo ""
