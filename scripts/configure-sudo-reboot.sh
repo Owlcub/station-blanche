@@ -55,13 +55,18 @@ EOF
 
 chmod 0440 "$SUDOERS_FILE"
 
-# Vérifier la syntaxe du fichier sudoers
-if visudo -c -f "$SUDOERS_FILE"; then
-    echo "✅ Configuration sudo créée avec succès"
+# Vérifier la syntaxe du fichier sudoers (si visudo est disponible)
+if command -v visudo &> /dev/null; then
+    if visudo -c -f "$SUDOERS_FILE"; then
+        echo "✅ Configuration sudo créée avec succès (syntaxe vérifiée)"
+    else
+        echo "❌ Erreur de syntaxe dans la configuration sudo"
+        rm -f "$SUDOERS_FILE"
+        exit 1
+    fi
 else
-    echo "❌ Erreur de syntaxe dans la configuration sudo"
-    rm -f "$SUDOERS_FILE"
-    exit 1
+    echo "⚠️  visudo non disponible, syntaxe non vérifiée"
+    echo "✅ Configuration sudo créée (vérification manuelle recommandée)"
 fi
 
 echo ""
