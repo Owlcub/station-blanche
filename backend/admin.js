@@ -133,55 +133,34 @@ router.get('/stats', requireAuth, (req, res) => {
 router.post('/update', requireAuth, (req, res) => {
   // Détecter le chemin du projet dynamiquement
   const projectDir = process.env.PROJECT_DIR || path.resolve(__dirname, '..');
-  const autoReboot = req.body.autoReboot !== false; // Par défaut true en mode kiosk
+  const scriptPath = path.join(projectDir, 'scripts', 'fix-station-blanche.sh');
 
-  exec(`cd ${projectDir} && git pull origin main`, (error, stdout, stderr) => {
-    if (error) {
-      return res.status(500).json({
-        error: 'Erreur lors de la mise à jour',
-        details: stderr || error.message,
-        command: `cd ${projectDir} && git pull origin main`
-      });
-    }
+  // Vérifier si le script existe
+  if (!require('fs').existsSync(scriptPath)) {
+    return res.status(500).json({
+      error: 'Script de mise à jour introuvable',
+      details: `Le fichier ${scriptPath} n'existe pas`
+    });
+  }
 
-    // Rebuild du frontend si nécessaire
-    exec(`cd ${projectDir}/frontend && npm run build`, (buildError, buildStdout, buildStderr) => {
-      if (buildError) {
-        return res.status(500).json({
-          error: 'Erreur lors du build frontend',
-          details: buildStderr || buildError.message
-        });
-      }
+  // Répondre immédiatement à l'utilisateur
+  res.json({
+    success: true,
+    message: 'Mise à jour lancée. Les services vont redémarrer dans quelques secondes...',
+    rebooting: false
+  });
 
-      // Redémarrer automatiquement après la mise à jour (mode kiosk)
-      if (autoReboot && require('fs').existsSync('/opt/station-blanche')) {
-        // Mode kiosque détecté, programmer un redémarrage dans 5 secondes
-        setTimeout(() => {
-          exec('systemctl reboot || /sbin/reboot || reboot', (rebootError) => {
-            if (rebootError) {
-              console.error('Erreur redémarrage:', rebootError);
-            }
-          });
-        }, 5000);
-
-        res.json({
-          success: true,
-          message: 'Mise à jour réussie. Redémarrage dans 5 secondes...',
-          output: stdout,
-          buildOutput: buildStdout,
-          rebooting: true
-        });
+  // Lancer le script de mise à jour en arrière-plan
+  setTimeout(() => {
+    exec(`sudo bash ${scriptPath}`, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Erreur lors de la mise à jour:', error);
+        console.error('STDERR:', stderr);
       } else {
-        res.json({
-          success: true,
-          message: 'Mise à jour réussie',
-          output: stdout,
-          buildOutput: buildStdout,
-          rebooting: false
-        });
+        console.log('Mise à jour réussie:', stdout);
       }
     });
-  });
+  }, 1000);
 });
 
 // Redémarrer le backend
@@ -212,6 +191,24 @@ router.post('/restart/all', requireAuth, (req, res) => {
     }
     res.json({ success: true, message: 'Tous les services redémarrés' });
   });
+});
+
+// Redémarrer la station complète (reboot système)
+router.post('/reboot', requireAuth, (req, res) => {
+  // Réponse immédiate avant le reboot
+  res.json({
+    success: true,
+    message: 'La station va redémarrer dans 5 secondes...'
+  });
+
+  // Programmer le redémarrage dans 5 secondes
+  setTimeout(() => {
+    exec('systemctl reboot || /sbin/reboot || reboot', (error) => {
+      if (error) {
+        console.error('Erreur redémarrage système:', error);
+      }
+    });
+  }, 5000);
 });
 
 // Changer le mot de passe admin
