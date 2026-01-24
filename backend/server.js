@@ -362,6 +362,96 @@ app.post('/api/usb/scan', async (req, res) => {
     }
 });
 
+// Scan simplifié pour le transfert guidé (workflow indépendant, garde la clé montée pour le transfert)
+app.post('/api/usb/scan-transfer', async (req, res) => {
+    try {
+        const { device } = req.body;
+        if (!device) {
+            return res.status(400).json({ error: 'Le device USB est requis' });
+        }
+
+        const infected_files = [];
+        const suspicious_files = [];
+        let mount_point = '';
+
+        try {
+            // Vérifier si déjà monté
+            const { stdout: mountCheck } = await execPromise(`mount | grep "${device}" || echo ""`);
+            if (mountCheck.trim()) {
+                const matches = mountCheck.match(/on\s+(.+?)\s+type/);
+                if (matches && matches[1]) {
+                    mount_point = matches[1];
+                }
+            } else {
+                // Monter le device en lecture-écriture (nécessaire pour le transfert ultérieur)
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '_');
+                mount_point = `/tmp/usb_transfer_${timestamp}`;
+                await execPromise(`mkdir -p ${mount_point}`);
+                try {
+                    await execPromise(`mount ${device} ${mount_point}`, { timeout: 10000 });
+                } catch (e) {
+                    await execPromise(`mount ${device}1 ${mount_point}`, { timeout: 10000 });
+                }
+            }
+
+            // Scan ClamAV rapide (seulement ClamAV, pas les détections heuristiques)
+            let useDaemon = false;
+            try {
+                await execPromise('pgrep clamd', { timeout: 1000 });
+                useDaemon = true;
+            } catch {
+                useDaemon = false;
+            }
+
+            let clamCommand;
+            if (useDaemon) {
+                clamCommand = `timeout 300 clamdscan --multiscan --fdpass -i ${mount_point}`;
+            } else {
+                clamCommand = `timeout 300 clamscan -r -i --no-summary ${mount_point}`;
+            }
+
+            const clamResult = await execPromise(clamCommand, { timeout: 305000 })
+                .catch(e => ({ stdout: e.stdout || '', stderr: e.stderr || '' }));
+
+            const lines = (clamResult.stdout || '').split('\n');
+            for (const line of lines) {
+                if (line.includes('FOUND')) {
+                    const parts = line.split(':');
+                    if (parts.length >= 2) {
+                        infected_files.push({
+                            file: parts[0].trim().replace(mount_point, ''),
+                            threat: parts.slice(1).join(':').replace('FOUND', '').trim(),
+                            detection: 'ClamAV'
+                        });
+                    }
+                }
+            }
+
+            // GARDER la clé montée pour le transfert (ne pas démonter)
+
+        } catch (scanError) {
+            throw scanError;
+        }
+
+        const all_threats = [...infected_files, ...suspicious_files];
+
+        res.json({
+            success: true,
+            device,
+            mount_point,
+            scan_results: all_threats,
+            total_infected: infected_files.length,
+            total_suspicious: suspicious_files.length,
+            clean: all_threats.length === 0,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('[USB SCAN TRANSFER] Error:', error);
+        res.status(500).json({ error: error.message, status: 'error', scan_results: [] });
+    }
+});
+
 // Quarantaine
 app.post('/api/usb/quarantine', async (req, res) => {
     try {

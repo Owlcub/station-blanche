@@ -56,7 +56,8 @@ const USBTransferGuided = () => {
     setScanResult(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/usb/scan`, {
+      // Utiliser l'endpoint dédié au transfert (workflow indépendant)
+      const response = await fetch(`${API_URL}/api/usb/scan-transfer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ device: device.device })
@@ -86,12 +87,17 @@ const USBTransferGuided = () => {
     setCurrentStep(STEPS.SCAN_SOURCE);
     const result = await scanDevice(device);
 
+    console.log('[USBTransferGuided] Scan source terminé:', result);
+
     if (result && result.success && (!result.scan_results || result.scan_results.length === 0)) {
+      console.log('[USBTransferGuided] Aucune menace, transition vers INSERT_DEST dans 1.5s');
       // Pas de menaces, continuer
       setTimeout(() => {
         setScanResult(null); // Réinitialiser pour la prochaine étape
         setCurrentStep(STEPS.INSERT_DEST);
       }, 1500);
+    } else {
+      console.log('[USBTransferGuided] Menaces détectées ou erreur, reste sur SCAN_SOURCE');
     }
   };
 
