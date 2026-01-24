@@ -375,8 +375,8 @@ app.post('/api/usb/scan-transfer', async (req, res) => {
         let mount_point = '';
 
         try {
-            // Vérifier si déjà monté
-            const { stdout: mountCheck } = await execPromise(`mount | grep "${device}" || echo ""`);
+            // Vérifier si déjà monté (chercher device et partitions)
+            const { stdout: mountCheck } = await execPromise(`mount | grep -E "${device}[0-9]?\\s" || echo ""`);
             if (mountCheck.trim()) {
                 const matches = mountCheck.match(/on\s+(.+?)\s+type/);
                 if (matches && matches[1]) {
@@ -599,24 +599,53 @@ app.post('/api/usb/transfer/browse', async (req, res) => {
     try {
         const { device, path: browsePath = '' } = req.body;
 
+        const logFile = '/tmp/usb-browse-debug.log';
+        const log = (msg) => {
+            const timestamp = new Date().toISOString();
+            require('fs').appendFileSync(logFile, `${timestamp} ${msg}\n`);
+            console.log(msg);
+        };
+
+        log(`[USB BROWSE] Request: device=${device}, browsePath=${browsePath}`);
+
         if (!device) {
             return res.status(400).json({ error: 'Device requis' });
         }
 
-        const mountId = `browse_${Date.now()}`;
-        const mountPoint = `/tmp/browse_${mountId}`;
+        let mountPoint = '';
+        let needsUnmount = false;
 
-        // Créer et monter temporairement
-        await execPromise(`mkdir -p ${mountPoint}`);
-        await execPromise(`mount -o ro ${device} ${mountPoint}`).catch(e =>
-            execPromise(`mount -o ro ${device}1 ${mountPoint}`)
-        );
+        // Vérifier si déjà monté (par le scan-transfer)
+        // Chercher le device ou ses partitions (ex: /dev/sdb ou /dev/sdb1)
+        const { stdout: mountCheck } = await execPromise(`mount | grep -E "${device}[0-9]?\\s" || echo ""`);
+        log(`[USB BROWSE] Mount check: ${mountCheck.trim()}`);
+
+        if (mountCheck.trim()) {
+            const matches = mountCheck.match(/on\s+(.+?)\s+type/);
+            if (matches && matches[1]) {
+                mountPoint = matches[1];
+                needsUnmount = false; // Déjà monté, on ne démonte pas
+                log(`[USB BROWSE] Using existing mount: ${mountPoint}`);
+            }
+        } else {
+            // Monter temporairement
+            const mountId = `browse_${Date.now()}`;
+            mountPoint = `/tmp/browse_${mountId}`;
+            log(`[USB BROWSE] Mounting to: ${mountPoint}`);
+            await execPromise(`mkdir -p ${mountPoint}`);
+            await execPromise(`mount -o ro ${device} ${mountPoint}`).catch(e =>
+                execPromise(`mount -o ro ${device}1 ${mountPoint}`)
+            );
+            needsUnmount = true; // On a monté, on démonte après
+        }
 
         // Lister le contenu du chemin demandé
         const fullPath = path.join(mountPoint, browsePath);
+        log(`[USB BROWSE] Listing path: ${fullPath}`);
         const { stdout: lsOutput } = await execPromise(
             `ls -lA --time-style=long-iso "${fullPath}" 2>/dev/null || echo ""`
         );
+        log(`[USB BROWSE] ls output (${lsOutput.length} bytes): ${lsOutput.substring(0, 200)}`);
 
         const items = [];
         const lines = lsOutput.split('\n').slice(1); // Skip "total" line
@@ -645,9 +674,13 @@ app.post('/api/usb/transfer/browse', async (req, res) => {
             });
         }
 
-        // Démonter immédiatement
-        await execPromise(`umount ${mountPoint}`);
-        await execPromise(`rmdir ${mountPoint}`);
+        // Démonter seulement si on a monté nous-même
+        if (needsUnmount) {
+            await execPromise(`umount ${mountPoint}`);
+            await execPromise(`rmdir ${mountPoint}`);
+        }
+
+        log(`[USB BROWSE] Returning ${items.length} items`);
 
         res.json({
             success: true,
@@ -659,6 +692,8 @@ app.post('/api/usb/transfer/browse', async (req, res) => {
         });
 
     } catch (error) {
+        const logFile = '/tmp/usb-browse-debug.log';
+        require('fs').appendFileSync(logFile, `${new Date().toISOString()} [USB BROWSE] ERROR: ${error.message}\n${error.stack}\n`);
         console.error('[USB BROWSE] Error:', error);
         res.status(500).json({ error: error.message });
     }

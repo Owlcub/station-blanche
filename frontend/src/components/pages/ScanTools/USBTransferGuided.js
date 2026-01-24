@@ -116,8 +116,12 @@ const USBTransferGuided = () => {
   };
 
   const browseSource = async (path = '') => {
-    if (!sourceDevice) return;
+    if (!sourceDevice) {
+      console.error('[USBTransferGuided] browseSource: pas de sourceDevice');
+      return;
+    }
 
+    console.log('[USBTransferGuided] browseSource:', { device: sourceDevice.device, path });
     setLoadingBrowser(true);
     try {
       const response = await fetch(`${API_URL}/api/usb/transfer/browse`, {
@@ -130,13 +134,18 @@ const USBTransferGuided = () => {
       });
 
       const data = await response.json();
+      console.log('[USBTransferGuided] browseSource response:', data);
+
       if (data.success) {
         setBrowserItems(data.items);
         setCurrentPath(data.path);
         setShowFileBrowser(true);
+        console.log('[USBTransferGuided] Items chargés:', data.items.length);
+      } else {
+        console.error('[USBTransferGuided] Browse failed:', data.error);
       }
     } catch (error) {
-      console.error('Erreur navigation:', error);
+      console.error('[USBTransferGuided] Erreur navigation:', error);
     } finally {
       setLoadingBrowser(false);
     }
