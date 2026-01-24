@@ -77,70 +77,54 @@ echo "Version actuelle :"
 git log -1 --oneline
 echo ""
 
-# Proposer un redémarrage complet
+# Redémarrage automatique en mode kiosque
 if [ -d "/opt/station-blanche" ]; then
     echo "================================================"
-    echo "  ⚠️  Redémarrage recommandé"
+    echo "  🔄 Redémarrage automatique"
     echo "================================================"
     echo ""
-    echo "Pour appliquer complètement les modifications,"
-    echo "il est recommandé de redémarrer la Station Blanche."
+    echo "Mode kiosque détecté - Redémarrage dans 10 secondes..."
+    echo "Les modifications seront appliquées au prochain démarrage."
     echo ""
-    read -p "Voulez-vous redémarrer maintenant ? [y/N] " REBOOT_NOW
 
-    if [ "$REBOOT_NOW" = "y" ] || [ "$REBOOT_NOW" = "Y" ]; then
-        echo ""
-        echo "🔄 Redémarrage dans 5 secondes..."
-        sleep 5
+    # Countdown
+    for i in 10 9 8 7 6 5 4 3 2 1; do
+        echo -ne "\rRedémarrage dans $i secondes... "
+        sleep 1
+    done
+    echo ""
+    echo ""
+    echo "🔄 Redémarrage en cours..."
 
-        # Trouver la commande de redémarrage appropriée
-        if [ "$IS_ROOT" = true ]; then
-            if command -v systemctl &> /dev/null; then
-                systemctl reboot
-            elif [ -x /sbin/reboot ]; then
-                /sbin/reboot
-            elif [ -x /usr/sbin/reboot ]; then
-                /usr/sbin/reboot
-            else
-                reboot
-            fi
-        elif command -v sudo &> /dev/null; then
-            if command -v systemctl &> /dev/null; then
-                sudo systemctl reboot
-            else
-                sudo reboot
-            fi
+    # Trouver la commande de redémarrage appropriée
+    if [ "$IS_ROOT" = true ]; then
+        if command -v systemctl &> /dev/null; then
+            systemctl reboot
+        elif [ -x /sbin/reboot ]; then
+            /sbin/reboot
+        elif [ -x /usr/sbin/reboot ]; then
+            /usr/sbin/reboot
         else
-            # Pas de sudo, utiliser su -c (demande le mot de passe root)
-            echo "⚠️  sudo non disponible, utilisation de su (mot de passe root requis)..."
-            if command -v systemctl &> /dev/null; then
-                su -c 'systemctl reboot'
-            elif [ -x /sbin/reboot ]; then
-                su -c '/sbin/reboot'
-            elif [ -x /usr/sbin/reboot ]; then
-                su -c '/usr/sbin/reboot'
-            else
-                su -c 'reboot'
-            fi
+            reboot
+        fi
+    elif command -v sudo &> /dev/null; then
+        if command -v systemctl &> /dev/null; then
+            sudo systemctl reboot
+        else
+            sudo reboot
         fi
     else
-        echo ""
-        echo "Pour redémarrer plus tard, exécutez :"
-        if command -v sudo &> /dev/null; then
-            if command -v systemctl &> /dev/null; then
-                echo "  sudo systemctl reboot"
-            else
-                echo "  sudo reboot"
-            fi
+        # Pas de sudo, utiliser su -c avec mot de passe automatique
+        # En mode kiosque, on suppose que l'utilisateur a les droits ou qu'on est root
+        echo "⚠️  Impossible de redémarrer automatiquement"
+        echo "Veuillez redémarrer manuellement avec :"
+        if command -v systemctl &> /dev/null; then
+            echo "  su -c 'systemctl reboot'"
+        elif [ -x /sbin/reboot ]; then
+            echo "  su -c '/sbin/reboot'"
         else
-            if command -v systemctl &> /dev/null; then
-                echo "  su -c 'systemctl reboot'"
-            elif [ -x /sbin/reboot ]; then
-                echo "  su -c '/sbin/reboot'"
-            else
-                echo "  su -c 'reboot'"
-            fi
+            echo "  su -c 'reboot'"
         fi
-        echo ""
+        exit 1
     fi
 fi

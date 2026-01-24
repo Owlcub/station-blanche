@@ -192,6 +192,12 @@ EOF
         echo "Y" | /opt/station-blanche/scripts/customize-login-screen.sh
     fi
 
+    # Configurer sudo pour le reboot automatique
+    echo "Configuration sudo pour reboot automatique..."
+    if [ -f "/opt/station-blanche/scripts/configure-sudo-reboot.sh" ]; then
+        /opt/station-blanche/scripts/configure-sudo-reboot.sh
+    fi
+
     echo ""
     echo "✅ Installation terminée en mode KIOSQUE !"
     echo ""
