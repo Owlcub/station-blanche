@@ -100,8 +100,13 @@ npm install
 npm install -g serve
 
 echo ""
-echo "🦠 Mise à jour de la base de signatures ClamAV..."
-freshclam || echo "⚠️  Mise à jour ClamAV échouée (peut nécessiter une configuration)"
+echo "🦠 Configuration ClamAV en mode daemon..."
+if [ -f "/opt/station-blanche/scripts/configure-clamav-daemon.sh" ]; then
+    /opt/station-blanche/scripts/configure-clamav-daemon.sh
+else
+    echo "⚠️  Script configure-clamav-daemon.sh non trouvé, configuration manuelle"
+    freshclam || echo "⚠️  Mise à jour ClamAV échouée"
+fi
 
 echo ""
 echo "📁 Création des répertoires de données..."

@@ -229,12 +229,29 @@ app.post('/api/usb/scan', async (req, res) => {
                 }
             }
 
-            // Scan ClamAV
+            // Scan ClamAV - utiliser clamdscan (daemon) si disponible, sinon clamscan
             updateProgress(1, 'Scan antivirus ClamAV...', 20);
-            const clamResult = await execPromise(
-                `timeout 600 clamscan -r -i --no-summary ${mount_point}`,
-                { timeout: 605000 }
-            ).catch(e => ({ stdout: e.stdout || '' }));
+
+            // Vérifier si clamd est actif
+            let useDaemon = false;
+            try {
+                await execPromise('pgrep clamd', { timeout: 1000 });
+                useDaemon = true;
+            } catch {
+                useDaemon = false;
+            }
+
+            let clamCommand;
+            if (useDaemon) {
+                // clamdscan est BEAUCOUP plus rapide (utilise le daemon)
+                clamCommand = `timeout 300 clamdscan --multiscan --fdpass -i ${mount_point}`;
+            } else {
+                // Fallback sur clamscan classique
+                clamCommand = `timeout 300 clamscan -r -i --no-summary ${mount_point}`;
+            }
+
+            const clamResult = await execPromise(clamCommand, { timeout: 305000 })
+                .catch(e => ({ stdout: e.stdout || '', stderr: e.stderr || '' }));
 
             const lines = (clamResult.stdout || '').split('\n');
             for (const line of lines) {
