@@ -86,9 +86,10 @@ const USBTransferGuided = () => {
     setCurrentStep(STEPS.SCAN_SOURCE);
     const result = await scanDevice(device);
 
-    if (result.success && (!result.scan_results || result.scan_results.length === 0)) {
+    if (result && result.success && (!result.scan_results || result.scan_results.length === 0)) {
       // Pas de menaces, continuer
       setTimeout(() => {
+        setScanResult(null); // Réinitialiser pour la prochaine étape
         setCurrentStep(STEPS.INSERT_DEST);
       }, 1500);
     }
@@ -99,9 +100,10 @@ const USBTransferGuided = () => {
     setCurrentStep(STEPS.SCAN_DEST);
     const result = await scanDevice(device);
 
-    if (result.success && (!result.scan_results || result.scan_results.length === 0)) {
+    if (result && result.success && (!result.scan_results || result.scan_results.length === 0)) {
       // Pas de menaces, continuer vers sélection fichiers
       setTimeout(() => {
+        setScanResult(null); // Réinitialiser pour la prochaine étape
         setCurrentStep(STEPS.SELECT_FILES);
       }, 1500);
     }
