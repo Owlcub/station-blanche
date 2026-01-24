@@ -76,8 +76,13 @@ const USBScanner = () => {
 
       const data = await response.json();
       if (data.success) {
-        alert('Fichiers mis en quarantaine avec succès');
-        startScan(selectedDevice); // Re-scan
+        alert(`${data.message || 'Fichiers mis en quarantaine avec succès'}\n\nVous pouvez maintenant éjecter la clé en toute sécurité.`);
+        // Mettre à jour l'affichage : retirer les fichiers quarantainés
+        setScanResult({
+          ...scanResult,
+          infected_files: [],
+          all_threats: scanResult.suspicious_files || []
+        });
       } else {
         alert('Erreur: ' + data.error);
       }
@@ -135,7 +140,7 @@ const USBScanner = () => {
       const data = await response.json();
       if (data.success) {
         alert(data.message || 'Corbeille nettoyée avec succès');
-        startScan(selectedDevice); // Re-scan après nettoyage
+        // Pas besoin de re-scanner après nettoyage de corbeille
       } else {
         alert('Erreur: ' + data.error);
       }
