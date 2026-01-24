@@ -861,6 +861,8 @@ app.post('/api/usb/transfer/start', async (req, res) => {
     try {
         const { source, destination, options = {}, selectedPaths = [] } = req.body;
 
+        serverLog(`[TRANSFER-START] Source: ${source}, Destination: ${destination}, Selected: ${selectedPaths.length} items`);
+
         if (!source || !destination) {
             return res.status(400).json({ error: 'Source et destination requises' });
         }
@@ -869,19 +871,49 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         currentTransferId = transferId; // Enregistrer comme transfert actif
         const timestamp = new Date().toISOString();
 
-        // Créer les points de montage
-        const sourceMountPoint = `/tmp/transfer_src_${transferId}`;
-        const destMountPoint = `/tmp/transfer_dst_${transferId}`;
+        // Vérifier si les devices sont déjà montés (par scan-transfer)
+        let sourceMountPoint = '';
+        let destMountPoint = '';
+        let needsSourceUnmount = false;
+        let needsDestUnmount = false;
 
-        await execPromise(`mkdir -p ${sourceMountPoint} ${destMountPoint}`);
+        // Chercher le montage source
+        const { stdout: sourceMountCheck } = await execPromise(`mount | grep -E "${source}[0-9]?\\s" || echo ""`);
+        serverLog(`[TRANSFER-START] Source mount check: ${sourceMountCheck.trim()}`);
+        if (sourceMountCheck.trim()) {
+            const matches = sourceMountCheck.match(/on\s+(.+?)\s+type/);
+            if (matches && matches[1]) {
+                sourceMountPoint = matches[1];
+                serverLog(`[TRANSFER-START] Using existing source mount: ${sourceMountPoint}`);
+            }
+        } else {
+            sourceMountPoint = `/tmp/transfer_src_${transferId}`;
+            await execPromise(`mkdir -p ${sourceMountPoint}`);
+            serverLog(`[TRANSFER-START] Mounting source to: ${sourceMountPoint}`);
+            await execPromise(`mount -o ro ${source} ${sourceMountPoint}`).catch(e =>
+                execPromise(`mount -o ro ${source}1 ${sourceMountPoint}`)
+            );
+            needsSourceUnmount = true;
+        }
 
-        // Monter les devices
-        await execPromise(`mount -o ro ${source} ${sourceMountPoint}`).catch(e =>
-            execPromise(`mount -o ro ${source}1 ${sourceMountPoint}`)
-        );
-        await execPromise(`mount ${destination} ${destMountPoint}`).catch(e =>
-            execPromise(`mount ${destination}1 ${destMountPoint}`)
-        );
+        // Chercher le montage destination
+        const { stdout: destMountCheck } = await execPromise(`mount | grep -E "${destination}[0-9]?\\s" || echo ""`);
+        serverLog(`[TRANSFER-START] Dest mount check: ${destMountCheck.trim()}`);
+        if (destMountCheck.trim()) {
+            const matches = destMountCheck.match(/on\s+(.+?)\s+type/);
+            if (matches && matches[1]) {
+                destMountPoint = matches[1];
+                serverLog(`[TRANSFER-START] Using existing dest mount: ${destMountPoint}`);
+            }
+        } else {
+            destMountPoint = `/tmp/transfer_dst_${transferId}`;
+            await execPromise(`mkdir -p ${destMountPoint}`);
+            serverLog(`[TRANSFER-START] Mounting dest to: ${destMountPoint}`);
+            await execPromise(`mount ${destination} ${destMountPoint}`).catch(e =>
+                execPromise(`mount ${destination}1 ${destMountPoint}`)
+            );
+            needsDestUnmount = true;
+        }
 
         // Scanner la source avant transfert (si demandé)
         let scanPaths = sourceMountPoint;
@@ -890,6 +922,24 @@ app.post('/api/usb/transfer/start', async (req, res) => {
             scanPaths = selectedPaths.map(p => `"${path.join(sourceMountPoint, p)}"`).join(' ');
         }
 
+        if (options.scan_before_transfer !== false) {
+            serverLog(`[TRANSFER-START] Skipping scan (already done by scan-transfer)`);
+            transferProgress.set(transferId, {
+                status: 'ready',
+                percent: 10,
+                step: 'Clés scannées et prêtes pour le transfert'
+            });
+        } else {
+            serverLog(`[TRANSFER-START] No scan requested`);
+            transferProgress.set(transferId, {
+                status: 'mounting',
+                percent: 5,
+                step: 'Montage des clés USB...'
+            });
+        }
+
+        // ANCIEN CODE DE SCAN - Désactivé car déjà fait par scan-transfer
+        /*
         if (options.scan_before_transfer !== false) {
             transferProgress.set(transferId, {
                 status: 'scanning',
@@ -942,18 +992,14 @@ app.post('/api/usb/transfer/start', async (req, res) => {
                 percent: 40,
                 step: 'Scan terminé - Aucune menace détectée'
             });
-        } else {
-            transferProgress.set(transferId, {
-                status: 'mounting',
-                percent: 5,
-                step: 'Montage des clés USB...'
-            });
         }
+        */
 
         // Effectuer le transfert avec rsync
+        serverLog(`[TRANSFER-START] Starting rsync from ${sourceMountPoint} to ${destMountPoint}`);
         transferProgress.set(transferId, {
             status: 'transferring',
-            percent: 45,
+            percent: 15,
             step: 'Transfert des fichiers en cours...'
         });
 
@@ -967,10 +1013,14 @@ app.post('/api/usb/transfer/start', async (req, res) => {
             rsyncCommand = `rsync -av --progress "${sourceMountPoint}/" "${destMountPoint}/"`;
         }
 
+        serverLog(`[TRANSFER-START] Rsync command: ${rsyncCommand}`);
+
         const { stdout: rsyncOutput } = await execPromise(
             rsyncCommand,
             { timeout: 3600000 } // 1h max
         );
+
+        serverLog(`[TRANSFER-START] Rsync completed, output length: ${rsyncOutput.length} bytes`);
 
         transferProgress.set(transferId, {
             status: 'verifying',
@@ -979,6 +1029,7 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         });
 
         // Vérifier l'intégrité
+        serverLog(`[TRANSFER-START] Verifying integrity...`);
         let sourceCount, destCount;
         if (selectedPaths.length > 0) {
             const pathsList = selectedPaths.map(p => `"${path.join(sourceMountPoint, p)}"`).join(' ');
@@ -995,9 +1046,20 @@ app.post('/api/usb/transfer/start', async (req, res) => {
             destCount = { stdout: dc };
         }
 
-        // Démonter
-        await execPromise(`umount ${sourceMountPoint} ${destMountPoint}`);
-        await execPromise(`rmdir ${sourceMountPoint} ${destMountPoint}`);
+        serverLog(`[TRANSFER-START] Files: source=${sourceCount.stdout.trim()}, dest=${destCount.stdout.trim()}`);
+
+        // NE PAS DÉMONTER les clés ici ! Elles seront démontées lors de l'éjection par l'utilisateur
+        // Nettoyer seulement les montages temporaires qu'on a créés
+        if (needsSourceUnmount) {
+            serverLog(`[TRANSFER-START] Unmounting temporary source mount: ${sourceMountPoint}`);
+            await execPromise(`umount ${sourceMountPoint} 2>/dev/null || true`);
+            await execPromise(`rmdir ${sourceMountPoint} 2>/dev/null || true`);
+        }
+        if (needsDestUnmount) {
+            serverLog(`[TRANSFER-START] Unmounting temporary dest mount: ${destMountPoint}`);
+            await execPromise(`umount ${destMountPoint} 2>/dev/null || true`);
+            await execPromise(`rmdir ${destMountPoint} 2>/dev/null || true`);
+        }
 
         const transferData = {
             transfer_id: transferId,
