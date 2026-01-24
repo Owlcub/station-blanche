@@ -131,13 +131,15 @@ router.get('/stats', requireAuth, (req, res) => {
 
 // Mettre à jour depuis Git
 router.post('/update', requireAuth, (req, res) => {
-  const projectDir = '/opt/station-blanche';
+  // Détecter le chemin du projet dynamiquement
+  const projectDir = process.env.PROJECT_DIR || path.resolve(__dirname, '..');
 
   exec(`cd ${projectDir} && git pull origin main`, (error, stdout, stderr) => {
     if (error) {
       return res.status(500).json({
         error: 'Erreur lors de la mise à jour',
-        details: stderr
+        details: stderr || error.message,
+        command: `cd ${projectDir} && git pull origin main`
       });
     }
 
@@ -146,7 +148,7 @@ router.post('/update', requireAuth, (req, res) => {
       if (buildError) {
         return res.status(500).json({
           error: 'Erreur lors du build frontend',
-          details: buildStderr
+          details: buildStderr || buildError.message
         });
       }
 
