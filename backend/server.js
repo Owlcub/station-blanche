@@ -1137,6 +1137,27 @@ app.post('/api/usb/transfer/start', async (req, res) => {
 
         serverLog(`[TRANSFER-START] Files: source=${sourceCount.stdout.trim()}, dest=${destCount.stdout.trim()}`);
 
+        // Lister les fichiers copiés sur la destination (pour confirmation)
+        let transferredFilesList = [];
+        try {
+            const { stdout: filesList } = await execPromise(
+                `find "${destMountPoint}" -type f -newer "${destMountPoint}" -o -type f -mmin -1 2>/dev/null | head -50`
+            ).catch(() => ({ stdout: '' }));
+
+            // Si pas de fichiers récents, lister les fichiers sélectionnés
+            if (!filesList.trim() && selectedPaths.length > 0) {
+                transferredFilesList = selectedPaths.map(p => path.basename(p));
+            } else if (filesList.trim()) {
+                transferredFilesList = filesList.split('\n')
+                    .filter(f => f.trim())
+                    .map(f => path.basename(f))
+                    .slice(0, 20); // Limite à 20 fichiers pour l'affichage
+            }
+            serverLog(`[TRANSFER-START] Transferred files list: ${transferredFilesList.join(', ')}`);
+        } catch (e) {
+            serverLog(`[TRANSFER-START] Could not list transferred files: ${e.message}`);
+        }
+
         // NE PAS DÉMONTER les clés ici ! Elles seront démontées lors de l'éjection par l'utilisateur
         // Nettoyer seulement les montages temporaires qu'on a créés
         if (needsSourceUnmount) {
@@ -1159,6 +1180,7 @@ app.post('/api/usb/transfer/start', async (req, res) => {
             files_transferred: parseInt(sourceCount.stdout.trim()),
             files_verified: parseInt(destCount.stdout.trim()),
             integrity_ok: sourceCount.stdout.trim() === destCount.stdout.trim(),
+            transferred_files: transferredFilesList,
             status: 'completed'
         };
 

@@ -609,6 +609,47 @@
   margin-top: 2rem;
 }
 
+.transferred-files-list {
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.transferred-files-list h3 {
+  margin: 0 0 1rem 0;
+  color: #065f46;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.transferred-files-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.transferred-files-list li {
+  padding: 0.5rem 0;
+  color: #047857;
+  font-size: 1rem;
+  border-bottom: 1px solid #d1fae5;
+}
+
+.transferred-files-list li:last-child {
+  border-bottom: none;
+}
+
+.transferred-files-list .more-files {
+  margin-top: 0.75rem;
+  color: #059669;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
 .completion-message {
   text-align: center;
   padding: 2rem;

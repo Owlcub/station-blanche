@@ -563,6 +563,22 @@ const USBTransferGuided = () => {
                     )}
                   </div>
 
+                  {transferResult.transferred_files && transferResult.transferred_files.length > 0 && (
+                    <div className="transferred-files-list">
+                      <h3>Fichiers copiés sur la clé de destination :</h3>
+                      <ul>
+                        {transferResult.transferred_files.map((file, idx) => (
+                          <li key={idx}>✓ {file}</li>
+                        ))}
+                      </ul>
+                      {transferResult.files_transferred > transferResult.transferred_files.length && (
+                        <p className="more-files">
+                          ... et {transferResult.files_transferred - transferResult.transferred_files.length} autre(s) fichier(s)
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div className="completion-message">
                     <h3>Vous pouvez maintenant retirer les clés USB</h3>
                     <p>Les périphériques vont être démontés en toute sécurité</p>
