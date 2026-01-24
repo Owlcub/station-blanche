@@ -111,15 +111,17 @@ if [ -d "/opt/station-blanche" ]; then
                 sudo reboot
             fi
         else
-            echo "⚠️  sudo non disponible. Exécutez manuellement :"
+            # Pas de sudo, utiliser su -c (demande le mot de passe root)
+            echo "⚠️  sudo non disponible, utilisation de su (mot de passe root requis)..."
             if command -v systemctl &> /dev/null; then
-                echo "  su -c 'systemctl reboot'"
+                su -c 'systemctl reboot'
             elif [ -x /sbin/reboot ]; then
-                echo "  su -c '/sbin/reboot'"
+                su -c '/sbin/reboot'
+            elif [ -x /usr/sbin/reboot ]; then
+                su -c '/usr/sbin/reboot'
             else
-                echo "  su -c 'reboot'"
+                su -c 'reboot'
             fi
-            exit 1
         fi
     else
         echo ""
