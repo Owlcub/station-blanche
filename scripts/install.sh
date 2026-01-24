@@ -198,6 +198,12 @@ EOF
         /opt/station-blanche/scripts/configure-sudo-reboot.sh
     fi
 
+    # Masquer les messages de boot pour un démarrage propre
+    echo "Configuration du boot silencieux..."
+    if [ -f "/opt/station-blanche/scripts/hide-boot-messages.sh" ]; then
+        /opt/station-blanche/scripts/hide-boot-messages.sh
+    fi
+
     echo ""
     echo "✅ Installation terminée en mode KIOSQUE !"
     echo ""
