@@ -18,11 +18,21 @@ fi
 
 cd /opt/station-blanche
 
-echo "1️⃣  Mise à jour du code..."
+echo "1️⃣  Configuration Git en HTTPS..."
+# Vérifier si le remote est en SSH et le convertir en HTTPS
+CURRENT_REMOTE=$(git remote get-url origin 2>/dev/null || echo "")
+if [[ "$CURRENT_REMOTE" == git@github.com:* ]]; then
+    echo "   Conversion SSH → HTTPS..."
+    git remote set-url origin https://github.com/Owlcub/station-blanche.git
+    echo "   ✅ Remote configuré en HTTPS"
+fi
+
+echo ""
+echo "2️⃣  Mise à jour du code..."
 git pull origin main
 
 echo ""
-echo "2️⃣  Configuration sudo pour reboot sans mot de passe..."
+echo "3️⃣  Configuration sudo pour reboot sans mot de passe..."
 if [ -f "./scripts/configure-sudo-reboot.sh" ]; then
     ./scripts/configure-sudo-reboot.sh
 else
@@ -30,7 +40,7 @@ else
 fi
 
 echo ""
-echo "3️⃣  Configuration ClamAV daemon (scan rapide)..."
+echo "4️⃣  Configuration ClamAV daemon (scan rapide)..."
 if [ -f "./scripts/configure-clamav-daemon.sh" ]; then
     ./scripts/configure-clamav-daemon.sh
 else
@@ -38,7 +48,7 @@ else
 fi
 
 echo ""
-echo "4️⃣  Masquage GRUB et messages de boot..."
+echo "5️⃣  Masquage GRUB et messages de boot..."
 if [ -f "./scripts/hide-boot-messages.sh" ]; then
     ./scripts/hide-boot-messages.sh
 else
@@ -46,7 +56,7 @@ else
 fi
 
 echo ""
-echo "5️⃣  Installation thème Plymouth Owlcub..."
+echo "6️⃣  Installation thème Plymouth Owlcub..."
 if [ -f "./scripts/install-plymouth-theme.sh" ]; then
     ./scripts/install-plymouth-theme.sh
 else
@@ -54,14 +64,14 @@ else
 fi
 
 echo ""
-echo "6️⃣  Rebuild frontend..."
+echo "7️⃣  Rebuild frontend..."
 cd frontend
 npm install
 npm run build
 cd ..
 
 echo ""
-echo "7️⃣  Redémarrage des services..."
+echo "8️⃣  Redémarrage des services..."
 systemctl restart station-blanche-backend || echo "⚠️  Backend non redémarré"
 systemctl restart station-blanche-frontend || echo "⚠️  Frontend non redémarré"
 
