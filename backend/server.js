@@ -1052,6 +1052,18 @@ app.post('/api/usb/transfer/start', async (req, res) => {
 
         // Effectuer le transfert avec rsync
         serverLog(`[TRANSFER-START] Starting rsync from ${sourceMountPoint} to ${destMountPoint}`);
+        serverLog(`[TRANSFER-START] Selected paths: ${JSON.stringify(selectedPaths)}`);
+
+        // Vérifier que les points de montage existent et contiennent des fichiers
+        try {
+            const { stdout: sourceLs } = await execPromise(`ls -la "${sourceMountPoint}" | head -20`);
+            serverLog(`[TRANSFER-START] Source mount content:\n${sourceLs}`);
+            const { stdout: destLs } = await execPromise(`ls -la "${destMountPoint}" | head -20`);
+            serverLog(`[TRANSFER-START] Dest mount content (before):\n${destLs}`);
+        } catch (e) {
+            serverLog(`[TRANSFER-START] Error listing mounts: ${e.message}`);
+        }
+
         transferProgress.set(transferId, {
             status: 'transferring',
             percent: 15,
@@ -1062,20 +1074,34 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         if (selectedPaths.length > 0) {
             // Transférer uniquement les fichiers/dossiers sélectionnés
             const pathsList = selectedPaths.map(p => `"${path.join(sourceMountPoint, p)}"`).join(' ');
-            rsyncCommand = `rsync -av --progress ${pathsList} "${destMountPoint}/"`;
+            rsyncCommand = `rsync -avh --progress ${pathsList} "${destMountPoint}/"`;
         } else {
             // Transférer tout le contenu
-            rsyncCommand = `rsync -av --progress "${sourceMountPoint}/" "${destMountPoint}/"`;
+            rsyncCommand = `rsync -avh --progress "${sourceMountPoint}/" "${destMountPoint}/"`;
         }
 
         serverLog(`[TRANSFER-START] Rsync command: ${rsyncCommand}`);
 
-        const { stdout: rsyncOutput } = await execPromise(
+        const rsyncStart = Date.now();
+        const { stdout: rsyncOutput, stderr: rsyncError } = await execPromise(
             rsyncCommand,
             { timeout: 3600000 } // 1h max
-        );
+        ).catch(e => ({ stdout: e.stdout || '', stderr: e.stderr || '' }));
 
-        serverLog(`[TRANSFER-START] Rsync completed, output length: ${rsyncOutput.length} bytes`);
+        const rsyncDuration = Date.now() - rsyncStart;
+        serverLog(`[TRANSFER-START] Rsync completed in ${rsyncDuration}ms`);
+        serverLog(`[TRANSFER-START] Rsync stdout:\n${rsyncOutput}`);
+        if (rsyncError) {
+            serverLog(`[TRANSFER-START] Rsync stderr:\n${rsyncError}`);
+        }
+
+        // Vérifier le contenu après transfert
+        try {
+            const { stdout: destLsAfter } = await execPromise(`ls -la "${destMountPoint}" | head -20`);
+            serverLog(`[TRANSFER-START] Dest mount content (after):\n${destLsAfter}`);
+        } catch (e) {
+            serverLog(`[TRANSFER-START] Error listing dest after: ${e.message}`);
+        }
 
         transferProgress.set(transferId, {
             status: 'verifying',
