@@ -126,6 +126,27 @@ const usbScanProgress = new Map();
 const transferProgress = new Map();
 let currentTransferId = null; // Stocker l'ID du transfert en cours
 
+// Vérifier qu'un device est bien une clé USB (pas un disque dur interne)
+async function isUSBDevice(device) {
+    try {
+        // Extraire le nom du device (ex: /dev/sdb -> sdb)
+        const devName = device.replace('/dev/', '').replace(/[0-9]+$/, '');
+
+        // Vérifier si c'est un device USB via sysfs
+        const { stdout: usbCheck } = await execPromise(
+            `readlink -f /sys/block/${devName} 2>/dev/null | grep -q usb && echo "yes" || echo "no"`,
+            { timeout: 2000 }
+        );
+
+        const isUsb = usbCheck.trim() === 'yes';
+        serverLog(`[USB-CHECK] Device ${device} (${devName}) is USB: ${isUsb}`);
+        return isUsb;
+    } catch (error) {
+        serverLog(`[USB-CHECK] Error checking ${device}: ${error.message}`);
+        return false;
+    }
+}
+
 // ==================== USB ENDPOINTS ====================
 
 // Détecter les périphériques USB connectés
@@ -385,6 +406,15 @@ app.post('/api/usb/scan-transfer', async (req, res) => {
             return res.status(400).json({ error: 'Le device USB est requis' });
         }
 
+        // Vérifier que c'est bien une clé USB
+        if (!(await isUSBDevice(device))) {
+            serverLog(`[SCAN-TRANSFER] REJECTED: ${device} is not a USB device`);
+            return res.status(400).json({
+                error: 'Ce périphérique n\'est pas une clé USB',
+                device
+            });
+        }
+
         const infected_files = [];
         const suspicious_files = [];
         let mount_point = '';
@@ -631,6 +661,15 @@ app.post('/api/usb/transfer/browse', async (req, res) => {
             return res.status(400).json({ error: 'Device requis' });
         }
 
+        // Vérifier que c'est bien une clé USB
+        if (!(await isUSBDevice(device))) {
+            log(`[USB BROWSE] REJECTED: ${device} is not a USB device`);
+            return res.status(400).json({
+                error: 'Ce périphérique n\'est pas une clé USB',
+                device
+            });
+        }
+
         let mountPoint = '';
         let needsUnmount = false;
 
@@ -865,6 +904,22 @@ app.post('/api/usb/transfer/start', async (req, res) => {
 
         if (!source || !destination) {
             return res.status(400).json({ error: 'Source et destination requises' });
+        }
+
+        // Vérifier que source et destination sont bien des clés USB
+        if (!(await isUSBDevice(source))) {
+            serverLog(`[TRANSFER-START] REJECTED: Source ${source} is not a USB device`);
+            return res.status(400).json({
+                error: 'La source n\'est pas une clé USB',
+                device: source
+            });
+        }
+        if (!(await isUSBDevice(destination))) {
+            serverLog(`[TRANSFER-START] REJECTED: Destination ${destination} is not a USB device`);
+            return res.status(400).json({
+                error: 'La destination n\'est pas une clé USB',
+                device: destination
+            });
         }
 
         const transferId = uuidv4();
