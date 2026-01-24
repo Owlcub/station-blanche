@@ -720,6 +720,14 @@ app.post('/api/usb/transfer/browse', async (req, res) => {
 
             if (name === '.' || name === '..') continue;
 
+            // Filtrer les fichiers système macOS/Windows cachés
+            if (name.startsWith('._') || name === '.DS_Store' || name === 'Thumbs.db' ||
+                name === '.Trashes' || name === '.Spotlight-V100' || name === '.fseventsd' ||
+                name === '.TemporaryItems' || name === 'System Volume Information') {
+                log(`[USB BROWSE] Skipping system file: ${name}`);
+                continue;
+            }
+
             const isDir = perms.startsWith('d');
             const itemPath = path.join(browsePath, name);
 
