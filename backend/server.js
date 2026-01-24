@@ -198,7 +198,7 @@ app.post('/api/usb/scan', async (req, res) => {
             usbScanProgress.set(device, {
                 status: 'scanning',
                 step,
-                totalSteps: 5,
+                totalSteps: 6,
                 currentStep: stepName,
                 percent,
                 threatsFound
@@ -214,16 +214,18 @@ app.post('/api/usb/scan', async (req, res) => {
                 const matches = mountCheck.match(/on\s+(.+?)\s+type/);
                 if (matches && matches[1]) {
                     mount_point = matches[1];
+                    needsUnmount = false; // Déjà monté, on ne démonte pas
                 }
             } else {
-                // Monter le device
+                // Monter le device en LECTURE-ÉCRITURE dans une sandbox
                 await execPromise(`mkdir -p ${mount_point}`);
                 try {
-                    await execPromise(`mount -o ro ${device} ${mount_point}`, { timeout: 10000 });
-                    needsUnmount = true;
+                    // On monte en rw (pas ro) pour permettre les actions post-scan
+                    await execPromise(`mount ${device} ${mount_point}`, { timeout: 10000 });
+                    needsUnmount = false; // On garde monté pour les actions post-scan
                 } catch (e) {
-                    await execPromise(`mount -o ro ${device}1 ${mount_point}`, { timeout: 10000 });
-                    needsUnmount = true;
+                    await execPromise(`mount ${device}1 ${mount_point}`, { timeout: 10000 });
+                    needsUnmount = false; // On garde monté pour les actions post-scan
                 }
             }
 
@@ -265,7 +267,7 @@ app.post('/api/usb/scan', async (req, res) => {
 
             updateProgress(3, 'Détection double extension...', 60);
             const { stdout: doubleExt } = await execPromise(
-                `find ${mount_point} -type f \\( -iname "*.pdf.exe" -o -iname "*.jpg.exe" \\)`,
+                `find ${mount_point} -type f \\( -iname "*.pdf.exe" -o -iname "*.jpg.exe" -o -iname "*.doc.exe" -o -iname "*.xls.exe" \\)`,
                 { timeout: 10000 }
             ).catch(() => ({ stdout: '' }));
 
@@ -277,12 +279,44 @@ app.post('/api/usb/scan', async (req, res) => {
                 });
             });
 
-            if (needsUnmount) {
-                await execPromise(`umount ${mount_point}`, { timeout: 10000 }).catch(() => {});
-                await execPromise(`rmdir ${mount_point}`).catch(() => {});
-            }
+            // Détection EDR: Fichiers exécutables suspects
+            updateProgress(4, 'Détection EDR fichiers exécutables...', 80);
+            const { stdout: exeFiles } = await execPromise(
+                `find ${mount_point} -type f \\( -iname "*.exe" -o -iname "*.bat" -o -iname "*.cmd" -o -iname "*.vbs" -o -iname "*.ps1" -o -iname "*.scr" \\)`,
+                { timeout: 10000 }
+            ).catch(() => ({ stdout: '' }));
+
+            exeFiles.split('\n').filter(f => f).forEach(file => {
+                // Ignorer si déjà détecté comme double extension
+                if (!suspicious_files.find(sf => sf.file === file.replace(mount_point, ''))) {
+                    suspicious_files.push({
+                        file: file.replace(mount_point, ''),
+                        threat: 'Executable file detected (potential risk)',
+                        detection: 'EDR'
+                    });
+                }
+            });
+
+            // Détection EDR: Fichiers cachés suspects
+            const { stdout: hiddenFiles } = await execPromise(
+                `find ${mount_point} -type f -name ".*" \\( -iname "*.exe" -o -iname "*.sh" -o -iname "*.bat" \\)`,
+                { timeout: 10000 }
+            ).catch(() => ({ stdout: '' }));
+
+            hiddenFiles.split('\n').filter(f => f).forEach(file => {
+                suspicious_files.push({
+                    file: file.replace(mount_point, ''),
+                    threat: 'Hidden executable file detected',
+                    detection: 'EDR'
+                });
+            });
+
+            // NE PAS démonter la clé après le scan !
+            // Elle reste montée pour permettre les actions post-scan (quarantaine, nettoyage, éjection)
+            // L'utilisateur devra éjecter manuellement avec le bouton "Éjecter"
 
         } catch (scanError) {
+            // En cas d'erreur, on démonte si on avait monté nous-même
             if (needsUnmount) {
                 await execPromise(`umount ${mount_point} 2>/dev/null || true`).catch(() => {});
                 await execPromise(`rmdir ${mount_point} 2>/dev/null || true`).catch(() => {});
@@ -291,11 +325,13 @@ app.post('/api/usb/scan', async (req, res) => {
         }
 
         const all_threats = [...infected_files, ...suspicious_files];
-        updateProgress(5, 'Scan terminé', 100, all_threats.length);
+        updateProgress(6, 'Scan terminé', 100, all_threats.length);
 
+        // Retourner le point de montage pour les actions post-scan
         res.json({
             success: true,
             device,
+            mount_point,
             scan_results: all_threats,
             total_infected: infected_files.length,
             total_suspicious: suspicious_files.length,
@@ -359,15 +395,30 @@ app.post('/api/usb/quarantine', async (req, res) => {
 app.post('/api/usb/clean-trash', async (req, res) => {
     try {
         const { device } = req.body;
-        const { stdout: mountCheck } = await execPromise(`mount | grep "${device}" || echo ""`);
-        const matches = mountCheck.match(/on\s+(.+?)\s+type/);
+        let { stdout: mountCheck } = await execPromise(`mount | grep "${device}" || echo ""`);
+        let matches = mountCheck.match(/on\s+(.+?)\s+type/);
+
+        // Si pas monté, on le monte
+        if (!matches || !matches[1]) {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '_');
+            const mount_point = `/tmp/usb_clean_${timestamp}`;
+            await execPromise(`mkdir -p ${mount_point}`);
+            try {
+                await execPromise(`mount ${device} ${mount_point}`, { timeout: 10000 });
+            } catch (e) {
+                await execPromise(`mount ${device}1 ${mount_point}`, { timeout: 10000 });
+            }
+            // Re-vérifier après montage
+            ({ stdout: mountCheck } = await execPromise(`mount | grep "${device}"`));
+            matches = mountCheck.match(/on\s+(.+?)\s+type/);
+        }
 
         if (matches && matches[1]) {
             const mountPoint = matches[1];
-            await execPromise(`rm -rf "${mountPoint}/.Trashes" "${mountPoint}/.Spotlight-V100"`);
-            res.json({ success: true, message: 'Corbeille nettoyée' });
+            await execPromise(`rm -rf "${mountPoint}/.Trashes" "${mountPoint}/.Spotlight-V100" "${mountPoint}/.fseventsd" "${mountPoint}/.TemporaryItems"`);
+            res.json({ success: true, message: 'Corbeille et fichiers système nettoyés' });
         } else {
-            res.status(400).json({ error: 'Device non monté' });
+            res.status(400).json({ error: 'Impossible de monter le device' });
         }
     } catch (error) {
         res.status(500).json({ error: error.message });
