@@ -133,6 +133,7 @@ router.get('/stats', requireAuth, (req, res) => {
 router.post('/update', requireAuth, (req, res) => {
   // Détecter le chemin du projet dynamiquement
   const projectDir = process.env.PROJECT_DIR || path.resolve(__dirname, '..');
+  const autoReboot = req.body.autoReboot !== false; // Par défaut true en mode kiosk
 
   exec(`cd ${projectDir} && git pull origin main`, (error, stdout, stderr) => {
     if (error) {
@@ -152,12 +153,33 @@ router.post('/update', requireAuth, (req, res) => {
         });
       }
 
-      res.json({
-        success: true,
-        message: 'Mise à jour réussie',
-        output: stdout,
-        buildOutput: buildStdout
-      });
+      // Redémarrer automatiquement après la mise à jour (mode kiosk)
+      if (autoReboot && require('fs').existsSync('/opt/station-blanche')) {
+        // Mode kiosque détecté, programmer un redémarrage dans 5 secondes
+        setTimeout(() => {
+          exec('systemctl reboot || /sbin/reboot || reboot', (rebootError) => {
+            if (rebootError) {
+              console.error('Erreur redémarrage:', rebootError);
+            }
+          });
+        }, 5000);
+
+        res.json({
+          success: true,
+          message: 'Mise à jour réussie. Redémarrage dans 5 secondes...',
+          output: stdout,
+          buildOutput: buildStdout,
+          rebooting: true
+        });
+      } else {
+        res.json({
+          success: true,
+          message: 'Mise à jour réussie',
+          output: stdout,
+          buildOutput: buildStdout,
+          rebooting: false
+        });
+      }
     });
   });
 });
