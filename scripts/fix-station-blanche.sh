@@ -18,21 +18,7 @@ fi
 
 cd /opt/station-blanche
 
-echo "1️⃣  Configuration Git en HTTPS..."
-# Vérifier si le remote est en SSH et le convertir en HTTPS
-CURRENT_REMOTE=$(git remote get-url origin 2>/dev/null || echo "")
-if [[ "$CURRENT_REMOTE" == git@github.com:* ]]; then
-    echo "   Conversion SSH → HTTPS..."
-    git remote set-url origin https://github.com/Owlcub/station-blanche.git
-    echo "   ✅ Remote configuré en HTTPS"
-fi
-
-echo ""
-echo "2️⃣  Mise à jour du code..."
-git pull origin main
-
-echo ""
-echo "3️⃣  Configuration sudo pour reboot sans mot de passe..."
+echo "1️⃣  Configuration sudo pour reboot sans mot de passe..."
 if [ -f "./scripts/configure-sudo-reboot.sh" ]; then
     ./scripts/configure-sudo-reboot.sh
 else
@@ -40,7 +26,7 @@ else
 fi
 
 echo ""
-echo "4️⃣  Configuration ClamAV daemon (scan rapide)..."
+echo "2️⃣  Configuration ClamAV daemon (scan rapide)..."
 if [ -f "./scripts/configure-clamav-daemon.sh" ]; then
     ./scripts/configure-clamav-daemon.sh
 else
@@ -48,7 +34,7 @@ else
 fi
 
 echo ""
-echo "5️⃣  Masquage GRUB et messages de boot..."
+echo "3️⃣  Masquage GRUB et messages de boot..."
 if [ -f "./scripts/hide-boot-messages.sh" ]; then
     ./scripts/hide-boot-messages.sh
 else
@@ -56,7 +42,7 @@ else
 fi
 
 echo ""
-echo "6️⃣  Installation thème Plymouth Owlcub..."
+echo "4️⃣  Installation thème Plymouth Owlcub..."
 if [ -f "./scripts/install-plymouth-theme.sh" ]; then
     ./scripts/install-plymouth-theme.sh
 else
@@ -64,14 +50,14 @@ else
 fi
 
 echo ""
-echo "7️⃣  Rebuild frontend..."
+echo "5️⃣  Rebuild frontend..."
 cd frontend
 npm install
 npm run build
 cd ..
 
 echo ""
-echo "8️⃣  Redémarrage des services..."
+echo "6️⃣  Redémarrage des services..."
 systemctl restart station-blanche-backend || echo "⚠️  Backend non redémarré"
 systemctl restart station-blanche-frontend || echo "⚠️  Frontend non redémarré"
 
@@ -81,7 +67,6 @@ echo "  ✅ Correction terminée !"
 echo "================================================"
 echo ""
 echo "Modifications appliquées :"
-echo "  ✅ Code mis à jour"
 echo "  ✅ Sudo configuré pour reboot sans mot de passe"
 echo "  ✅ ClamAV daemon configuré (scans 10-20x plus rapides)"
 echo "  ✅ GRUB masqué"
