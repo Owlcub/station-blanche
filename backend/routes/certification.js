@@ -169,13 +169,19 @@ router.post('/certify', async (req, res) => {
             return res.status(400).json({ error: 'Device et mount_point requis' });
         }
 
+        // Log pour debug
+        console.log('[CERTIFY] scan_results reçus:', JSON.stringify(scan_results, null, 2));
+
         // Vérifier que le scan est clean
         if (scan_results.threats_found > 0) {
+            console.log('[CERTIFY] REJET: threats_found =', scan_results.threats_found);
             return res.status(400).json({
                 error: 'Impossible de certifier une clé avec des menaces détectées',
                 threats_found: scan_results.threats_found
             });
         }
+
+        console.log('[CERTIFY] OK: Aucune menace, certification autorisée');
 
         // Obtenir les infos USB (UUID, serial, label)
         let usbInfo = { device, mount_point };
