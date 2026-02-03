@@ -2,7 +2,7 @@ import API_URL from '../../../config';
 import React, { useState, useEffect } from 'react';
 import './USBScanner.css';
 import { Card, Button, Loading, Badge } from '../../design-system';
-import { Usb, Play, Trash2, Unplug, AlertTriangle, Eraser } from 'lucide-react';
+import { Usb, Play, Trash2, Unplug, AlertTriangle, Eraser, Shield, CheckCircle, XCircle } from 'lucide-react';
 
 const USBScanner = () => {
   const [usbDevices, setUsbDevices] = useState([]);
@@ -10,6 +10,11 @@ const USBScanner = () => {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [actionInProgress, setActionInProgress] = useState(false);
+
+  // Certification states
+  const [certifying, setCertifying] = useState(false);
+  const [certificationResult, setCertificationResult] = useState(null);
+  const [certificationStatus, setCertificationStatus] = useState(null);
 
   useEffect(() => {
     detectUSB();
@@ -46,17 +51,109 @@ const USBScanner = () => {
 
       if (data.success) {
         // Normaliser la structure: scan_results -> infected_files et suspicious_files
-        setScanResult({
+        const result = {
           ...data,
           infected_files: data.scan_results?.filter(r => r.detection === 'ClamAV') || [],
           suspicious_files: data.scan_results?.filter(r => r.detection !== 'ClamAV') || [],
           all_threats: data.scan_results || []
-        });
+        };
+        setScanResult(result);
+
+        // Vérifier si la clé a déjà un certificat
+        if (data.mount_point) {
+          checkCertification(data.mount_point);
+        }
       }
     } catch (error) {
       console.error('Erreur scan USB:', error);
     } finally {
       setScanning(false);
+    }
+  };
+
+  const checkCertification = async (mountPoint) => {
+    try {
+      const response = await fetch(`${API_URL}/api/certification/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ mount_point: mountPoint })
+      });
+
+      const data = await response.json();
+      if (data.success && data.certified) {
+        setCertificationStatus({
+          certified: true,
+          certificate: data.certificate,
+          verification: data.verification
+        });
+      } else {
+        setCertificationStatus({
+          certified: false
+        });
+      }
+    } catch (error) {
+      console.error('Erreur vérification certification:', error);
+      setCertificationStatus({ certified: false });
+    }
+  };
+
+  const certifyUSB = async () => {
+    if (!selectedDevice || !scanResult) return;
+
+    setCertifying(true);
+    setCertificationResult(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/certification/certify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          device: selectedDevice.device,
+          mount_point: scanResult.mount_point,
+          scan_results: {
+            clamav_clean: scanResult.clean,
+            ransomware_detected: scanResult.ransomware_analysis?.ransomware_detected || false,
+            entropy_status: scanResult.entropy_analysis?.status || 'normal',
+            total_files: scanResult.entropy_analysis?.total_scanned || 0,
+            total_size_bytes: 0,
+            threats_found: scanResult.scan_results?.length || 0
+          },
+          options: {
+            policy: 'standard',
+            includeManifest: true
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCertificationResult({
+          success: true,
+          message: 'Clé USB certifiée avec succès !',
+          cert_path: data.cert_path
+        });
+        // Mettre à jour le statut
+        setCertificationStatus({
+          certified: true,
+          certificate: data.certificate
+        });
+      } else {
+        setCertificationResult({
+          success: false,
+          error: data.error
+        });
+      }
+    } catch (error) {
+      console.error('Erreur certification:', error);
+      setCertificationResult({
+        success: false,
+        error: error.message
+      });
+    } finally {
+      setCertifying(false);
     }
   };
 
@@ -233,14 +330,56 @@ const USBScanner = () => {
               <div className="scan-result">
                 <div className="result-header">
                   <h3>Résultats du scan</h3>
-                  <Badge
-                    variant={scanResult.infected_files?.length > 0 ? 'danger' : 'success'}
-                  >
-                    {scanResult.infected_files?.length > 0
-                      ? `${scanResult.infected_files.length} menace(s)`
-                      : 'Aucune menace'}
-                  </Badge>
+                  <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                    <Badge
+                      variant={scanResult.infected_files?.length > 0 ? 'danger' : 'success'}
+                    >
+                      {scanResult.infected_files?.length > 0
+                        ? `${scanResult.infected_files.length} menace(s)`
+                        : 'Aucune menace'}
+                    </Badge>
+                    {certificationStatus && (
+                      <Badge
+                        variant={certificationStatus.certified ? 'success' : 'warning'}
+                      >
+                        {certificationStatus.certified ? (
+                          <>
+                            <Shield size={14} style={{marginRight: '4px'}} />
+                            Certifiée
+                          </>
+                        ) : (
+                          <>
+                            <Shield size={14} style={{marginRight: '4px'}} />
+                            Non certifiée
+                          </>
+                        )}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
+
+                {/* Afficher info certificat si existant */}
+                {certificationStatus?.certified && certificationStatus.verification && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    background: '#d1fae5',
+                    borderRadius: '8px',
+                    border: '1px solid #10b981'
+                  }}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', color: '#065f46', marginBottom: '4px'}}>
+                      <CheckCircle size={16} />
+                      <strong>Clé certifiée</strong>
+                    </div>
+                    <div style={{fontSize: '12px', color: '#047857'}}>
+                      {certificationStatus.verification.expired ? (
+                        <span style={{color: '#dc2626'}}>⚠️ Certificat expiré le {new Date(certificationStatus.certificate.expiration).toLocaleString()}</span>
+                      ) : (
+                        <span>Expire le {new Date(certificationStatus.certificate.expiration).toLocaleString()}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {scanResult.infected_files?.length > 0 && (
                   <>
@@ -304,29 +443,76 @@ const USBScanner = () => {
                 )}
 
                 {(!scanResult.infected_files || scanResult.infected_files.length === 0) && (
-                  <div className="usb-actions">
-                    <h4>Actions disponibles</h4>
-                    <div className="actions-grid">
-                      <Button
-                        variant="secondary"
-                        icon={Eraser}
-                        onClick={handleCleanTrash}
-                        disabled={actionInProgress}
-                        loading={actionInProgress}
-                      >
-                        Nettoyer corbeille
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        icon={Unplug}
-                        onClick={handleEject}
-                        disabled={actionInProgress}
-                        loading={actionInProgress}
-                      >
-                        Éjecter la clé
-                      </Button>
+                  <>
+                    {/* Section de certification */}
+                    {!certificationStatus?.certified && (
+                      <div style={{
+                        marginTop: '16px',
+                        padding: '16px',
+                        background: '#f0f9ff',
+                        borderRadius: '8px',
+                        border: '1px solid #3b82f6'
+                      }}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px'}}>
+                          <Shield size={20} color="#3b82f6" />
+                          <h4 style={{margin: 0, color: '#1e40af'}}>Certification USB</h4>
+                        </div>
+
+                        {certificationResult ? (
+                          certificationResult.success ? (
+                            <div style={{color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                              <CheckCircle size={18} />
+                              <span>{certificationResult.message}</span>
+                            </div>
+                          ) : (
+                            <div style={{color: '#ef4444', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                              <XCircle size={18} />
+                              <span>Erreur: {certificationResult.error}</span>
+                            </div>
+                          )
+                        ) : (
+                          <>
+                            <p style={{fontSize: '13px', color: '#1e40af', margin: '0 0 12px 0'}}>
+                              Certifiez cette clé USB pour l'autoriser sur les réseaux d'entreprise protégés
+                            </p>
+                            <Button
+                              variant="primary"
+                              icon={Shield}
+                              onClick={certifyUSB}
+                              disabled={certifying || actionInProgress}
+                              loading={certifying}
+                            >
+                              {certifying ? 'Certification...' : 'Certifier cette clé USB'}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="usb-actions">
+                      <h4>Actions disponibles</h4>
+                      <div className="actions-grid">
+                        <Button
+                          variant="secondary"
+                          icon={Eraser}
+                          onClick={handleCleanTrash}
+                          disabled={actionInProgress}
+                          loading={actionInProgress}
+                        >
+                          Nettoyer corbeille
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          icon={Unplug}
+                          onClick={handleEject}
+                          disabled={actionInProgress}
+                          loading={actionInProgress}
+                        >
+                          Éjecter la clé
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             )}
