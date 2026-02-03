@@ -765,11 +765,12 @@ app.post('/api/usb/transfer/browse', async (req, res) => {
 
             if (name === '.' || name === '..') continue;
 
-            // Filtrer les fichiers système macOS/Windows cachés
+            // Filtrer les fichiers système macOS/Windows cachés + dossier de certification
             if (name.startsWith('._') || name === '.DS_Store' || name === 'Thumbs.db' ||
                 name === '.Trashes' || name === '.Spotlight-V100' || name === '.fseventsd' ||
-                name === '.TemporaryItems' || name === 'System Volume Information') {
-                log(`[USB BROWSE] Skipping system file: ${name}`);
+                name === '.TemporaryItems' || name === 'System Volume Information' ||
+                name === '.cyberbox-cert') {
+                log(`[USB BROWSE] Skipping system/cert file: ${name}`);
                 continue;
             }
 
@@ -1124,13 +1125,16 @@ app.post('/api/usb/transfer/start', async (req, res) => {
         });
 
         let rsyncCommand;
+        // Exclusions système + certificat (ne jamais transférer les certificats entre clés)
+        const excludes = '--exclude=".DS_Store" --exclude="._*" --exclude=".Trashes" --exclude=".Spotlight-V100" --exclude=".fseventsd" --exclude=".TemporaryItems" --exclude="Thumbs.db" --exclude="System Volume Information" --exclude=".cyberbox-cert"';
+
         if (selectedPaths.length > 0) {
             // Transférer uniquement les fichiers/dossiers sélectionnés
             const pathsList = selectedPaths.map(p => `"${path.join(sourceMountPoint, p)}"`).join(' ');
-            rsyncCommand = `rsync -avh --progress ${pathsList} "${destMountPoint}/"`;
+            rsyncCommand = `rsync -avh --progress ${excludes} ${pathsList} "${destMountPoint}/"`;
         } else {
             // Transférer tout le contenu
-            rsyncCommand = `rsync -avh --progress "${sourceMountPoint}/" "${destMountPoint}/"`;
+            rsyncCommand = `rsync -avh --progress ${excludes} "${sourceMountPoint}/" "${destMountPoint}/"`;
         }
 
         serverLog(`[TRANSFER-START] Rsync command: ${rsyncCommand}`);
