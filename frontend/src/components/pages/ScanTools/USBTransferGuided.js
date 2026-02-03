@@ -89,17 +89,45 @@ const USBTransferGuided = () => {
   const handleSourceSelected = async (device) => {
     setSourceDevice(device);
     setCurrentStep(STEPS.SCAN_SOURCE);
-    const result = await scanDevice(device);
 
+    // D'abord vérifier si la clé a un certificat valide
+    try {
+      const certCheckResponse = await fetch(`${API_URL}/api/certification/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device: device.device })
+      });
+      const certData = await certCheckResponse.json();
+
+      if (certData.success && certData.certified && certData.verification?.valid) {
+        console.log('[USBTransferGuided] Certificat valide trouvé, skip scan');
+        setScanResult({
+          success: true,
+          clean: true,
+          certified: true,
+          certificate: certData.certificate,
+          skip_scan: true
+        });
+        setTimeout(() => {
+          setScanResult(null);
+          setCurrentStep(STEPS.INSERT_DEST);
+        }, 1500);
+        return;
+      }
+    } catch (error) {
+      console.log('[USBTransferGuided] Pas de certificat, scan normal');
+    }
+
+    // Pas de certificat valide, faire le scan
+    const result = await scanDevice(device);
     console.log('[USBTransferGuided] Scan source terminé:', result);
 
     // Ne bloquer que si ClamAV a détecté des virus (pas les alertes EDR)
     const infected_files = result?.scan_results?.filter(r => r.detection === 'ClamAV') || [];
     if (result && result.success && infected_files.length === 0) {
       console.log('[USBTransferGuided] ClamAV clean, transition vers INSERT_DEST dans 1.5s');
-      // Pas de virus ClamAV, continuer
       setTimeout(() => {
-        setScanResult(null); // Réinitialiser pour la prochaine étape
+        setScanResult(null);
         setCurrentStep(STEPS.INSERT_DEST);
       }, 1500);
     } else {
@@ -110,14 +138,43 @@ const USBTransferGuided = () => {
   const handleDestSelected = async (device) => {
     setDestDevice(device);
     setCurrentStep(STEPS.SCAN_DEST);
+
+    // D'abord vérifier si la clé a un certificat valide
+    try {
+      const certCheckResponse = await fetch(`${API_URL}/api/certification/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device: device.device })
+      });
+      const certData = await certCheckResponse.json();
+
+      if (certData.success && certData.certified && certData.verification?.valid) {
+        console.log('[USBTransferGuided] Certificat valide trouvé pour destination, skip scan');
+        setScanResult({
+          success: true,
+          clean: true,
+          certified: true,
+          certificate: certData.certificate,
+          skip_scan: true
+        });
+        setTimeout(() => {
+          setScanResult(null);
+          setCurrentStep(STEPS.SELECT_FILES);
+        }, 1500);
+        return;
+      }
+    } catch (error) {
+      console.log('[USBTransferGuided] Pas de certificat, scan normal');
+    }
+
+    // Pas de certificat valide, faire le scan
     const result = await scanDevice(device);
 
     // Ne bloquer que si ClamAV a détecté des virus (pas les alertes EDR)
     const infected_files = result?.scan_results?.filter(r => r.detection === 'ClamAV') || [];
     if (result && result.success && infected_files.length === 0) {
-      // Pas de virus ClamAV, continuer vers sélection fichiers
       setTimeout(() => {
-        setScanResult(null); // Réinitialiser pour la prochaine étape
+        setScanResult(null);
         setCurrentStep(STEPS.SELECT_FILES);
       }, 1500);
     }
@@ -404,7 +461,7 @@ const USBTransferGuided = () => {
             <div className="step-view">
               <div className="instruction-banner">
                 <AlertTriangle size={48} color="#f59e0b" />
-                <h2>Scan de la clé SOURCE en cours...</h2>
+                <h2>{scanResult?.skip_scan ? 'Vérification certificat...' : 'Scan de la clé SOURCE en cours...'}</h2>
                 <p>{sourceDevice?.name || sourceDevice?.device}</p>
               </div>
 
@@ -412,7 +469,16 @@ const USBTransferGuided = () => {
                 <Loading text="Analyse antivirus en cours..." />
               ) : scanResult ? (
                 <div className="scan-summary">
-                  {scanResult.infected_files?.length > 0 ? (
+                  {scanResult.skip_scan ? (
+                    <>
+                      <CheckCircle size={64} color="#10b981" />
+                      <h3>✓ Certificat valide trouvé</h3>
+                      <p>Scan ignoré - Clé déjà certifiée</p>
+                      <div style={{marginTop: '12px', fontSize: '13px', color: '#64748b'}}>
+                        Expire le {new Date(scanResult.certificate?.expiration).toLocaleString()}
+                      </div>
+                    </>
+                  ) : scanResult.infected_files?.length > 0 ? (
                     <>
                       <XCircle size={64} color="#ef4444" />
                       <h3>⚠️ Menaces détectées!</h3>
@@ -505,7 +571,7 @@ const USBTransferGuided = () => {
             <div className="step-view">
               <div className="instruction-banner">
                 <AlertTriangle size={48} color="#f59e0b" />
-                <h2>Scan de la clé DESTINATION en cours...</h2>
+                <h2>{scanResult?.skip_scan ? 'Vérification certificat...' : 'Scan de la clé DESTINATION en cours...'}</h2>
                 <p>{destDevice?.name || destDevice?.device}</p>
               </div>
 
@@ -513,7 +579,16 @@ const USBTransferGuided = () => {
                 <Loading text="Analyse antivirus en cours..." />
               ) : scanResult ? (
                 <div className="scan-summary">
-                  {scanResult.infected_files?.length > 0 ? (
+                  {scanResult.skip_scan ? (
+                    <>
+                      <CheckCircle size={64} color="#10b981" />
+                      <h3>✓ Certificat valide trouvé</h3>
+                      <p>Scan ignoré - Clé déjà certifiée</p>
+                      <div style={{marginTop: '12px', fontSize: '13px', color: '#64748b'}}>
+                        Expire le {new Date(scanResult.certificate?.expiration).toLocaleString()}
+                      </div>
+                    </>
+                  ) : scanResult.infected_files?.length > 0 ? (
                     <>
                       <XCircle size={64} color="#ef4444" />
                       <h3>⚠️ Menaces détectées!</h3>
