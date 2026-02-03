@@ -64,8 +64,9 @@ const USBScanner = () => {
         if (data.mount_point) {
           const certStatus = await checkCertification(data.mount_point);
 
-          // Si scan propre, pas de menaces et pas déjà certifiée → Proposer certification
-          if (result.clean && result.all_threats.length === 0 && !certStatus.certified) {
+          // Si scan ClamAV propre (pas de virus), proposer certification
+          // On ignore les détections EDR/heuristiques pour la certification
+          if (result.infected_files.length === 0 && !certStatus.certified) {
             setShowCertificationModal(true);
           }
         }
