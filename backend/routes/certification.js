@@ -212,19 +212,6 @@ router.post('/certify', requireAuth, async (req, res) => {
         // Écrire sur la clé USB
         const writeResult = await certificateManager.writeCertificateToUSB(certificate, mount_point);
 
-        // Copier automatiquement le guide GPO sur la clé
-        try {
-            const fs = require('fs').promises;
-            const path = require('path');
-            const guidePath = path.join(__dirname, '../../CERTIFICATION-USB-GPO.md');
-            const destPath = path.join(mount_point, 'CERTIFICATION-USB-GPO.md');
-            await fs.copyFile(guidePath, destPath);
-            console.log('[CERTIFY] GPO guide copied to USB');
-        } catch (error) {
-            console.error('[CERTIFY] Error copying GPO guide:', error);
-            // Ne pas faire échouer la certification si la copie échoue
-        }
-
         res.json({
             success: true,
             message: 'Clé USB certifiée avec succès',

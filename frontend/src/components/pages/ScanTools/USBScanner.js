@@ -562,8 +562,8 @@ const USBScanner = () => {
               </p>
               <ul style={{fontSize: '13px', color: '#1e40af', marginTop: '8px', marginBottom: 0, paddingLeft: '20px'}}>
                 <li>Clé autorisée sur les postes protégés par GPO</li>
+                <li>Certificat cryptographique signé RSA-2048</li>
                 <li>Certificat valide 1 heure (configurable)</li>
-                <li>Guide GPO copié automatiquement sur la clé</li>
               </ul>
             </div>
             <div style={{display: 'flex', gap: '12px'}}>

@@ -351,25 +351,25 @@ function CertificationManager() {
         </div>
       </div>
 
-      {/* GPO Documentation - Mode Kiosque */}
+      {/* GPO Documentation */}
       <div className="cert-section" style={{background: '#fef3c7', borderLeft: '4px solid #f59e0b'}}>
         <h3>📖 Guide de déploiement GPO Windows</h3>
         <p style={{marginBottom: '15px', color: '#92400e'}}>
-          Le guide GPO est automatiquement copié sur chaque clé USB certifiée dans le dossier racine.
+          Le guide complet se trouve dans la documentation du projet GitHub ou peut être fourni en format papier.
         </p>
         <div style={{background: 'white', padding: '15px', borderRadius: '6px', marginBottom: '15px'}}>
-          <p style={{fontSize: '13px', color: '#92400e', margin: 0}}>
-            <strong>📋 Instructions :</strong>
+          <p style={{fontSize: '13px', color: '#92400e', margin: '0 0 10px 0'}}>
+            <strong>📋 Emplacement du guide :</strong>
           </p>
-          <ol style={{marginLeft: '20px', marginTop: '8px', fontSize: '13px', color: '#92400e'}}>
-            <li>Scannez une clé USB avec le scanner</li>
-            <li>Si propre, certifiez-la</li>
-            <li>Le guide <code>CERTIFICATION-USB-GPO.md</code> sera automatiquement copié</li>
-            <li>Récupérez le guide depuis la clé sur votre serveur AD</li>
-          </ol>
+          <code style={{display: 'block', padding: '8px', background: '#f3f4f6', borderRadius: '4px', fontSize: '12px'}}>
+            /opt/station-blanche/CERTIFICATION-USB-GPO.md
+          </code>
+          <p style={{fontSize: '13px', color: '#92400e', marginTop: '10px', marginBottom: 0}}>
+            Vous pouvez le consulter en SSH ou créer une documentation papier pour vos administrateurs.
+          </p>
         </div>
         <p style={{fontSize: '12px', color: '#92400e', fontStyle: 'italic'}}>
-          💡 Le guide contient les scripts PowerShell prêts à l'emploi pour bloquer les clés USB non certifiées.
+          💡 Le guide contient les scripts PowerShell prêts à l'emploi pour bloquer les clés USB non certifiées sur vos postes Windows.
         </p>
       </div>
 
