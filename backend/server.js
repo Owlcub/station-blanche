@@ -284,14 +284,17 @@ app.post('/api/usb/scan', async (req, res) => {
 
             let clamCommand;
             if (useDaemon) {
-                // clamdscan est BEAUCOUP plus rapide (utilise le daemon)
-                clamCommand = `timeout 300 clamdscan --multiscan --fdpass -i ${mount_point}`;
+                // clamdscan avec parallélisation maximale (utilise tous les CPU cores)
+                // --multiscan : scan parallèle des fichiers
+                // --fdpass : passage de descripteurs de fichiers (plus rapide)
+                // -i : n'afficher que les fichiers infectés
+                clamCommand = `timeout 600 clamdscan --multiscan --fdpass -i ${mount_point}`;
             } else {
                 // Fallback sur clamscan classique
-                clamCommand = `timeout 300 clamscan -r -i --no-summary ${mount_point}`;
+                clamCommand = `timeout 600 clamscan -r -i --no-summary ${mount_point}`;
             }
 
-            const clamResult = await execPromise(clamCommand, { timeout: 305000 })
+            const clamResult = await execPromise(clamCommand, { timeout: 605000 })
                 .catch(e => ({ stdout: e.stdout || '', stderr: e.stderr || '' }));
 
             const lines = (clamResult.stdout || '').split('\n');
@@ -461,12 +464,12 @@ app.post('/api/usb/scan-transfer', async (req, res) => {
 
             let clamCommand;
             if (useDaemon) {
-                clamCommand = `timeout 300 clamdscan --multiscan --fdpass -i ${mount_point}`;
+                clamCommand = `timeout 600 clamdscan --multiscan --fdpass -i ${mount_point}`;
             } else {
-                clamCommand = `timeout 300 clamscan -r -i --no-summary ${mount_point}`;
+                clamCommand = `timeout 600 clamscan -r -i --no-summary ${mount_point}`;
             }
 
-            const clamResult = await execPromise(clamCommand, { timeout: 305000 })
+            const clamResult = await execPromise(clamCommand, { timeout: 605000 })
                 .catch(e => ({ stdout: e.stdout || '', stderr: e.stderr || '' }));
 
             const lines = (clamResult.stdout || '').split('\n');
