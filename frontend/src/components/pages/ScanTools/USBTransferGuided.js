@@ -93,9 +93,11 @@ const USBTransferGuided = () => {
 
     console.log('[USBTransferGuided] Scan source terminé:', result);
 
-    if (result && result.success && (!result.scan_results || result.scan_results.length === 0)) {
-      console.log('[USBTransferGuided] Aucune menace, transition vers INSERT_DEST dans 1.5s');
-      // Pas de menaces, continuer
+    // Ne bloquer que si ClamAV a détecté des virus (pas les alertes EDR)
+    const infected_files = result?.scan_results?.filter(r => r.detection === 'ClamAV') || [];
+    if (result && result.success && infected_files.length === 0) {
+      console.log('[USBTransferGuided] ClamAV clean, transition vers INSERT_DEST dans 1.5s');
+      // Pas de virus ClamAV, continuer
       setTimeout(() => {
         setScanResult(null); // Réinitialiser pour la prochaine étape
         setCurrentStep(STEPS.INSERT_DEST);
@@ -110,8 +112,10 @@ const USBTransferGuided = () => {
     setCurrentStep(STEPS.SCAN_DEST);
     const result = await scanDevice(device);
 
-    if (result && result.success && (!result.scan_results || result.scan_results.length === 0)) {
-      // Pas de menaces, continuer vers sélection fichiers
+    // Ne bloquer que si ClamAV a détecté des virus (pas les alertes EDR)
+    const infected_files = result?.scan_results?.filter(r => r.detection === 'ClamAV') || [];
+    if (result && result.success && infected_files.length === 0) {
+      // Pas de virus ClamAV, continuer vers sélection fichiers
       setTimeout(() => {
         setScanResult(null); // Réinitialiser pour la prochaine étape
         setCurrentStep(STEPS.SELECT_FILES);
