@@ -125,7 +125,7 @@ const USBScanner = () => {
             entropy_status: scanResult.entropy_analysis?.status || 'normal',
             total_files: scanResult.entropy_analysis?.total_scanned || 0,
             total_size_bytes: 0,
-            threats_found: scanResult.scan_results?.length || 0
+            threats_found: scanResult.all_threats?.length || 0
           },
           options: {
             policy: 'standard',
