@@ -121,12 +121,12 @@ const USBScanner = () => {
           device: selectedDevice.device,
           mount_point: scanResult.mount_point,
           scan_results: {
-            clamav_clean: scanResult.clean,
+            clamav_clean: scanResult.infected_files.length === 0,
             ransomware_detected: scanResult.ransomware_analysis?.ransomware_detected || false,
             entropy_status: scanResult.entropy_analysis?.status || 'normal',
             total_files: scanResult.entropy_analysis?.total_scanned || 0,
             total_size_bytes: 0,
-            threats_found: scanResult.all_threats?.length || 0
+            threats_found: scanResult.infected_files.length
           },
           options: {
             policy: 'standard',

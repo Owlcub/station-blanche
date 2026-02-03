@@ -271,12 +271,12 @@ const USBTransferGuided = () => {
           device: device.device,
           mount_point: scanData.mount_point,
           scan_results: {
-            clamav_clean: scanData.clean,
+            clamav_clean: (scanData.scan_results?.filter(r => r.detection === 'ClamAV') || []).length === 0,
             ransomware_detected: scanData.ransomware_analysis?.ransomware_detected || false,
             entropy_status: scanData.entropy_analysis?.status || 'normal',
             total_files: scanData.entropy_analysis?.total_scanned || 0,
             total_size_bytes: 0,
-            threats_found: scanData.scan_results?.length || 0
+            threats_found: (scanData.scan_results?.filter(r => r.detection === 'ClamAV') || []).length
           },
           options: {
             policy: 'standard',
