@@ -256,14 +256,19 @@ class CertificateManager {
 
     async generateFileManifest(mountPoint) {
         try {
-            // Générer hash SHA256 de tous les fichiers
+            // Vérifier que le point de montage existe toujours
+            await fs.access(mountPoint);
+
+            // Générer hash SHA256 de tous les fichiers (timeout 5 minutes)
             const { stdout } = await execPromise(
                 `find "${mountPoint}" -type f -exec sha256sum {} \\; 2>/dev/null | sort | sha256sum`,
-                { timeout: 60000 }
+                { timeout: 300000 }
             );
             return stdout.trim().split(' ')[0];
         } catch (error) {
             console.error('[CERT-MANAGER] Error generating manifest:', error);
+            console.error('[CERT-MANAGER] Mount point may have been unmounted');
+            // Retourner null mais ne pas bloquer la certification
             return null;
         }
     }
