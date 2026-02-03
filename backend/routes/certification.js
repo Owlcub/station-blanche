@@ -155,8 +155,8 @@ router.put('/expiration-policies', requireAuth, async (req, res) => {
     }
 });
 
-// Certifier une clé USB après scan
-router.post('/certify', requireAuth, async (req, res) => {
+// Certifier une clé USB après scan (pas d'auth requise - utilisé en mode kiosque)
+router.post('/certify', async (req, res) => {
     try {
         const {
             device,
