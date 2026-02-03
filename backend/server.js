@@ -167,7 +167,8 @@ app.get('/api/usb/connected', async (req, res) => {
             try {
                 const { stdout: usbCheck } = await execPromise(`readlink -f /sys/block/${devName} | grep -q usb && echo "usb" || echo "not-usb"`);
 
-                if (usbCheck.trim() === 'usb' || devName.match(/^sd[b-z]$/)) {
+                // SÉCURITÉ: N'accepter QUE les devices USB (pas de fallback sur sd[b-z])
+                if (usbCheck.trim() === 'usb') {
                     let deviceData = null;
                     try {
                         const { stdout: lsblkOut } = await execPromise(`lsblk -J -o NAME,SIZE,TYPE,MOUNTPOINT,VENDOR,MODEL /dev/${devName} 2>/dev/null`);
