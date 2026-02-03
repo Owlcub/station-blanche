@@ -32,6 +32,10 @@ const USBTransferGuided = () => {
   const [selectedPaths, setSelectedPaths] = useState([]);
   const [loadingBrowser, setLoadingBrowser] = useState(false);
 
+  // Certification
+  const [certifying, setCertifying] = useState(false);
+  const [certificationResult, setCertificationResult] = useState(null);
+
   useEffect(() => {
     detectUSB();
     const interval = setInterval(detectUSB, 3000);
@@ -246,7 +250,60 @@ const USBTransferGuided = () => {
     setDestDevice(null);
     setScanResult(null);
     setTransferResult(null);
+    setCertificationResult(null);
     setSelectedPaths([]);
+  };
+
+  const certifyUSB = async (device, scanData) => {
+    setCertifying(true);
+    setCertificationResult(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/certification/certify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          device: device.device,
+          mount_point: scanData.mount_point,
+          scan_results: {
+            clamav_clean: scanData.clean,
+            ransomware_detected: scanData.ransomware_analysis?.ransomware_detected || false,
+            entropy_status: scanData.entropy_analysis?.status || 'normal',
+            total_files: scanData.entropy_analysis?.total_scanned || 0,
+            total_size_bytes: 0,
+            threats_found: scanData.scan_results?.length || 0
+          },
+          options: {
+            policy: 'standard',
+            includeManifest: true
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCertificationResult({
+          success: true,
+          message: 'Clé USB certifiée avec succès !',
+          cert_path: data.cert_path
+        });
+      } else {
+        setCertificationResult({
+          success: false,
+          error: data.error
+        });
+      }
+    } catch (error) {
+      console.error('Erreur certification:', error);
+      setCertificationResult({
+        success: false,
+        error: error.message
+      });
+    } finally {
+      setCertifying(false);
+    }
   };
 
   // Polling progression transfert
@@ -367,6 +424,34 @@ const USBTransferGuided = () => {
                       <CheckCircle size={64} color="#10b981" />
                       <h3>✓ Clé saine</h3>
                       <p>Aucune menace détectée</p>
+
+                      {/* Bouton Certifier */}
+                      <div className="certification-section" style={{marginTop: '20px', padding: '15px', background: '#f0f9ff', borderRadius: '8px'}}>
+                        {certificationResult ? (
+                          certificationResult.success ? (
+                            <div style={{color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                              <CheckCircle size={20} style={{marginRight: '8px'}} />
+                              {certificationResult.message}
+                            </div>
+                          ) : (
+                            <div style={{color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                              <XCircle size={20} style={{marginRight: '8px'}} />
+                              Erreur: {certificationResult.error}
+                            </div>
+                          )
+                        ) : (
+                          <Button
+                            onClick={() => certifyUSB(sourceDevice, scanResult)}
+                            disabled={certifying}
+                            variant="primary"
+                          >
+                            {certifying ? 'Certification...' : '🔒 Certifier cette clé USB'}
+                          </Button>
+                        )}
+                        <p style={{fontSize: '12px', color: '#64748b', marginTop: '8px', textAlign: 'center'}}>
+                          La certification permet d'autoriser cette clé sur les réseaux d'entreprise
+                        </p>
+                      </div>
                     </>
                   )}
                 </div>

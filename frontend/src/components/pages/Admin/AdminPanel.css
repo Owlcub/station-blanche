@@ -319,6 +319,15 @@
   background: #c53030;
 }
 
+.action-group button.btn-danger-reboot {
+  background: #d97706;
+  font-weight: 600;
+}
+
+.action-group button.btn-danger-reboot:hover:not(:disabled) {
+  background: #b45309;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .admin-header {

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './AdminPanel.css';
-import { Lock, Activity, RefreshCw, Download, Terminal, Settings } from 'lucide-react';
+import { Lock, Activity, RefreshCw, Download, Terminal, Settings, Power, Shield } from 'lucide-react';
 import API_URL from '../../../config';
+import CertificationManager from './CertificationManager';
 
 function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -152,6 +153,24 @@ function AdminPanel() {
     }
   };
 
+  const handleRebootSystem = async () => {
+    if (!window.confirm('⚠️ ATTENTION : Redémarrer complètement la station ?\n\nLa station va redémarrer immédiatement.')) return;
+
+    try {
+      await axios.post(`${API_URL}/api/admin/reboot`, {}, {
+        withCredentials: true
+      });
+      alert('La station va redémarrer dans 5 secondes...');
+
+      // Déconnexion automatique après 3 secondes
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+    } catch (err) {
+      alert('Erreur : ' + (err.response?.data?.error || 'Échec du redémarrage'));
+    }
+  };
+
   // Interface de login
   if (!isAuthenticated) {
     return (
@@ -233,6 +252,12 @@ function AdminPanel() {
           onClick={() => setActiveTab('actions')}
         >
           <RefreshCw size={18} /> Actions
+        </button>
+        <button
+          className={activeTab === 'certification' ? 'active' : ''}
+          onClick={() => setActiveTab('certification')}
+        >
+          <Shield size={18} /> Certificats USB
         </button>
       </div>
 
@@ -319,7 +344,20 @@ function AdminPanel() {
                 Redémarrer Tous les Services
               </button>
             </div>
+
+            <div className="action-group">
+              <h3><Power size={20} /> Redémarrage Système</h3>
+              <p>⚠️ Redémarrer complètement la station (reboot)</p>
+              <button onClick={handleRebootSystem} className="btn-danger-reboot">
+                Redémarrer la Station
+              </button>
+            </div>
           </div>
+        )}
+
+        {/* CERTIFICATION */}
+        {activeTab === 'certification' && (
+          <CertificationManager />
         )}
       </div>
     </div>

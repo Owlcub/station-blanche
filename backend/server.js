@@ -121,6 +121,13 @@ class Database {
 
 const db = new Database();
 
+// Gestionnaire de certification
+const certificateManager = require('./certification/certificate-manager');
+
+// Modules EDR
+const { scanDirectoryEntropy } = require('./edr/entropy-analyzer');
+const { scanForRansomware } = require('./edr/ransomware-detector');
+
 // Stocker les progressions de scan
 const usbScanProgress = new Map();
 const transferProgress = new Map();
@@ -476,6 +483,32 @@ app.post('/api/usb/scan-transfer', async (req, res) => {
                 }
             }
 
+            // EDR: Analyse ransomware et entropie
+            serverLog(`[SCAN-TRANSFER] Running EDR analysis...`);
+            const [ransomwareAnalysis, entropyAnalysis] = await Promise.all([
+                scanForRansomware(mount_point),
+                scanDirectoryEntropy(mount_point)
+            ]);
+
+            serverLog(`[SCAN-TRANSFER] Ransomware detected: ${ransomwareAnalysis.ransomware_detected}`);
+            serverLog(`[SCAN-TRANSFER] Entropy status: ${entropyAnalysis.status}`);
+
+            // Ajouter les menaces ransomware détectées
+            if (ransomwareAnalysis.threats && ransomwareAnalysis.threats.length > 0) {
+                suspicious_files.push(...ransomwareAnalysis.threats);
+            }
+
+            // Ajouter les fichiers chiffrés détectés par entropie
+            if (entropyAnalysis.encrypted_files && entropyAnalysis.encrypted_files.length > 0) {
+                entropyAnalysis.encrypted_files.forEach(ef => {
+                    suspicious_files.push({
+                        file: ef.file,
+                        threat: `High entropy detected (${ef.entropy}) - possibly encrypted`,
+                        detection: 'Entropy Analysis'
+                    });
+                });
+            }
+
             // GARDER la clé montée pour le transfert (ne pas démonter)
 
         } catch (scanError) {
@@ -492,6 +525,8 @@ app.post('/api/usb/scan-transfer', async (req, res) => {
             total_infected: infected_files.length,
             total_suspicious: suspicious_files.length,
             clean: all_threats.length === 0,
+            ransomware_analysis: ransomwareAnalysis || {},
+            entropy_analysis: entropyAnalysis || {},
             timestamp: new Date().toISOString()
         });
 
@@ -1510,6 +1545,11 @@ app.post('/api/workstation/scan', async (req, res) => {
 const adminRouter = require('./admin');
 app.use('/api/admin', adminRouter);
 
+// ==================== CERTIFICATION ROUTES ====================
+
+const certificationRouter = require('./routes/certification');
+app.use('/api/certification', certificationRouter);
+
 // ==================== DÉMARRAGE ====================
 
 const PORT_TO_USE = PORT;
@@ -1519,4 +1559,6 @@ app.listen(PORT_TO_USE, '0.0.0.0', async () => {
     console.log(`📡 API disponible sur http://localhost:${PORT_TO_USE}`);
     await db.init();
     console.log('✅ Base de données initialisée');
+    await certificateManager.init();
+    console.log('✅ Gestionnaire de certification initialisé');
 });

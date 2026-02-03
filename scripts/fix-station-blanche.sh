@@ -18,7 +18,11 @@ fi
 
 cd /opt/station-blanche
 
-echo "1️⃣  Configuration sudo pour reboot sans mot de passe..."
+echo "1️⃣  Mise à jour du code (git pull)..."
+git pull origin main
+
+echo ""
+echo "2️⃣  Configuration sudo pour reboot sans mot de passe..."
 if [ -f "./scripts/configure-sudo-reboot.sh" ]; then
     ./scripts/configure-sudo-reboot.sh
 else
@@ -26,7 +30,7 @@ else
 fi
 
 echo ""
-echo "2️⃣  Configuration ClamAV daemon (scan rapide)..."
+echo "3️⃣  Configuration ClamAV daemon (scan rapide)..."
 if [ -f "./scripts/configure-clamav-daemon.sh" ]; then
     ./scripts/configure-clamav-daemon.sh
 else
@@ -34,7 +38,7 @@ else
 fi
 
 echo ""
-echo "3️⃣  Masquage GRUB et messages de boot..."
+echo "4️⃣  Masquage GRUB et messages de boot..."
 if [ -f "./scripts/hide-boot-messages.sh" ]; then
     ./scripts/hide-boot-messages.sh
 else
@@ -42,7 +46,7 @@ else
 fi
 
 echo ""
-echo "4️⃣  Installation thème Plymouth Owlcub..."
+echo "5️⃣  Installation thème Plymouth Owlcub..."
 if [ -f "./scripts/install-plymouth-theme.sh" ]; then
     ./scripts/install-plymouth-theme.sh
 else
@@ -50,14 +54,30 @@ else
 fi
 
 echo ""
-echo "5️⃣  Rebuild frontend..."
+echo "6️⃣  Configuration mises à jour automatiques hebdomadaires..."
+if [ -f "./scripts/configure-auto-updates.sh" ]; then
+    ./scripts/configure-auto-updates.sh
+else
+    echo "⚠️  Script non trouvé"
+fi
+
+echo ""
+echo "7️⃣  Configuration mises à jour ClamAV automatiques..."
+if [ -f "./scripts/configure-clamav-auto-update.sh" ]; then
+    ./scripts/configure-clamav-auto-update.sh
+else
+    echo "⚠️  Script non trouvé"
+fi
+
+echo ""
+echo "8️⃣  Rebuild frontend..."
 cd frontend
 npm install
 npm run build
 cd ..
 
 echo ""
-echo "6️⃣  Redémarrage des services..."
+echo "9️⃣  Redémarrage des services..."
 systemctl restart station-blanche-backend || echo "⚠️  Backend non redémarré"
 systemctl restart station-blanche-frontend || echo "⚠️  Frontend non redémarré"
 
@@ -67,10 +87,13 @@ echo "  ✅ Correction terminée !"
 echo "================================================"
 echo ""
 echo "Modifications appliquées :"
+echo "  ✅ Code mis à jour"
 echo "  ✅ Sudo configuré pour reboot sans mot de passe"
 echo "  ✅ ClamAV daemon configuré (scans 10-20x plus rapides)"
 echo "  ✅ GRUB masqué"
 echo "  ✅ Thème Plymouth Owlcub installé"
+echo "  ✅ Mises à jour automatiques hebdomadaires configurées (dimanche 2h)"
+echo "  ✅ Mises à jour ClamAV quotidiennes configurées (3h)"
 echo "  ✅ Frontend rebuil"
 echo "  ✅ Services redémarrés"
 echo ""
