@@ -238,13 +238,46 @@ router.post('/certify', async (req, res) => {
 // Vérifier un certificat (lecture depuis USB)
 router.post('/verify', async (req, res) => {
     try {
-        const { mount_point } = req.body;
+        let { mount_point, device } = req.body;
+
+        // Si device fourni sans mount_point, monter temporairement
+        let needsUnmount = false;
+        if (!mount_point && device) {
+            // Vérifier si déjà monté
+            const { stdout: mountCheck } = await execPromise(`mount | grep -E "${device}[0-9]?\\s" || echo ""`);
+            if (mountCheck.trim()) {
+                const matches = mountCheck.match(/on\s+(.+?)\s+type/);
+                if (matches && matches[1]) {
+                    mount_point = matches[1];
+                }
+            } else {
+                // Monter temporairement en lecture seule
+                const timestamp = Date.now();
+                mount_point = `/tmp/cert_verify_${timestamp}`;
+                await execPromise(`mkdir -p ${mount_point}`);
+                try {
+                    await execPromise(`mount -o ro ${device} ${mount_point}`).catch(() =>
+                        execPromise(`mount -o ro ${device}1 ${mount_point}`)
+                    );
+                    needsUnmount = true;
+                } catch (error) {
+                    await execPromise(`rmdir ${mount_point}`).catch(() => {});
+                    return res.status(400).json({ error: 'Impossible de monter le périphérique' });
+                }
+            }
+        }
 
         if (!mount_point) {
-            return res.status(400).json({ error: 'mount_point requis' });
+            return res.status(400).json({ error: 'mount_point ou device requis' });
         }
 
         const certificate = await certificateManager.readCertificateFromUSB(mount_point);
+
+        // Démonter si on avait monté temporairement
+        if (needsUnmount) {
+            await execPromise(`umount ${mount_point} 2>/dev/null || true`).catch(() => {});
+            await execPromise(`rmdir ${mount_point} 2>/dev/null || true`).catch(() => {});
+        }
 
         if (!certificate) {
             return res.json({
