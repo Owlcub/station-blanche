@@ -15,6 +15,7 @@ const USBScanner = () => {
   const [certifying, setCertifying] = useState(false);
   const [certificationResult, setCertificationResult] = useState(null);
   const [certificationStatus, setCertificationStatus] = useState(null);
+  const [showCertificationModal, setShowCertificationModal] = useState(false);
 
   useEffect(() => {
     detectUSB();
@@ -59,9 +60,14 @@ const USBScanner = () => {
         };
         setScanResult(result);
 
-        // Vérifier si la clé a déjà un certificat
+        // Vérifier si la clé a déjà un certificat et proposer certification si besoin
         if (data.mount_point) {
-          checkCertification(data.mount_point);
+          const certStatus = await checkCertification(data.mount_point);
+
+          // Si scan propre, pas de menaces et pas déjà certifiée → Proposer certification
+          if (result.clean && result.all_threats.length === 0 && !certStatus.certified) {
+            setShowCertificationModal(true);
+          }
         }
       }
     } catch (error) {
@@ -81,20 +87,21 @@ const USBScanner = () => {
       });
 
       const data = await response.json();
-      if (data.success && data.certified) {
-        setCertificationStatus({
-          certified: true,
-          certificate: data.certificate,
-          verification: data.verification
-        });
-      } else {
-        setCertificationStatus({
-          certified: false
-        });
-      }
+      const status = data.success && data.certified ? {
+        certified: true,
+        certificate: data.certificate,
+        verification: data.verification
+      } : {
+        certified: false
+      };
+
+      setCertificationStatus(status);
+      return status;
     } catch (error) {
       console.error('Erreur vérification certification:', error);
-      setCertificationStatus({ certified: false });
+      const status = { certified: false };
+      setCertificationStatus(status);
+      return status;
     }
   };
 
@@ -519,6 +526,71 @@ const USBScanner = () => {
           </>
         )}
       </div>
+
+      {/* Modal de certification automatique */}
+      {showCertificationModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+          }}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
+              <Shield size={32} color="#3b82f6" />
+              <h2 style={{margin: 0, color: '#1e40af'}}>Certifier cette clé USB ?</h2>
+            </div>
+            <p style={{fontSize: '15px', color: '#4b5563', marginBottom: '20px'}}>
+              La clé est propre et saine. Voulez-vous la certifier pour l'autoriser sur les réseaux d'entreprise ?
+            </p>
+            <div style={{background: '#f0f9ff', padding: '12px', borderRadius: '6px', marginBottom: '20px'}}>
+              <p style={{fontSize: '13px', color: '#1e40af', margin: 0}}>
+                <strong>✓ Avantages :</strong>
+              </p>
+              <ul style={{fontSize: '13px', color: '#1e40af', marginTop: '8px', marginBottom: 0, paddingLeft: '20px'}}>
+                <li>Clé autorisée sur les postes protégés par GPO</li>
+                <li>Certificat valide 1 heure (configurable)</li>
+                <li>Guide GPO copié automatiquement sur la clé</li>
+              </ul>
+            </div>
+            <div style={{display: 'flex', gap: '12px'}}>
+              <Button
+                variant="primary"
+                icon={Shield}
+                onClick={() => {
+                  setShowCertificationModal(false);
+                  certifyUSB();
+                }}
+                disabled={certifying}
+                loading={certifying}
+                style={{flex: 1}}
+              >
+                Certifier maintenant
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowCertificationModal(false)}
+                style={{flex: 1}}
+              >
+                Plus tard
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

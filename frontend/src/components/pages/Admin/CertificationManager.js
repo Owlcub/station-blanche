@@ -351,28 +351,25 @@ function CertificationManager() {
         </div>
       </div>
 
-      {/* GPO Documentation Download */}
+      {/* GPO Documentation - Mode Kiosque */}
       <div className="cert-section" style={{background: '#fef3c7', borderLeft: '4px solid #f59e0b'}}>
         <h3>📖 Guide de déploiement GPO Windows</h3>
-        <p style={{marginBottom: '15px'}}>
-          Téléchargez le guide complet pour déployer la validation de certificats USB sur vos postes Windows via GPO.
+        <p style={{marginBottom: '15px', color: '#92400e'}}>
+          Le guide GPO est automatiquement copié sur chaque clé USB certifiée dans le dossier racine.
         </p>
-        <button
-          className="btn-export"
-          onClick={() => {
-            const link = document.createElement('a');
-            link.href = '/CERTIFICATION-USB-GPO.md';
-            link.download = 'CERTIFICATION-USB-GPO.md';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showMessage('Guide GPO téléchargé !');
-          }}
-        >
-          <Download size={16} /> Télécharger le guide GPO (Markdown)
-        </button>
-        <p style={{fontSize: '12px', color: '#92400e', marginTop: '10px'}}>
-          Ce guide contient les scripts PowerShell prêts à l'emploi pour bloquer les clés USB non certifiées sur vos postes Windows.
+        <div style={{background: 'white', padding: '15px', borderRadius: '6px', marginBottom: '15px'}}>
+          <p style={{fontSize: '13px', color: '#92400e', margin: 0}}>
+            <strong>📋 Instructions :</strong>
+          </p>
+          <ol style={{marginLeft: '20px', marginTop: '8px', fontSize: '13px', color: '#92400e'}}>
+            <li>Scannez une clé USB avec le scanner</li>
+            <li>Si propre, certifiez-la</li>
+            <li>Le guide <code>CERTIFICATION-USB-GPO.md</code> sera automatiquement copié</li>
+            <li>Récupérez le guide depuis la clé sur votre serveur AD</li>
+          </ol>
+        </div>
+        <p style={{fontSize: '12px', color: '#92400e', fontStyle: 'italic'}}>
+          💡 Le guide contient les scripts PowerShell prêts à l'emploi pour bloquer les clés USB non certifiées.
         </p>
       </div>
 

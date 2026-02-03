@@ -212,6 +212,19 @@ router.post('/certify', requireAuth, async (req, res) => {
         // Écrire sur la clé USB
         const writeResult = await certificateManager.writeCertificateToUSB(certificate, mount_point);
 
+        // Copier automatiquement le guide GPO sur la clé
+        try {
+            const fs = require('fs').promises;
+            const path = require('path');
+            const guidePath = path.join(__dirname, '../../CERTIFICATION-USB-GPO.md');
+            const destPath = path.join(mount_point, 'CERTIFICATION-USB-GPO.md');
+            await fs.copyFile(guidePath, destPath);
+            console.log('[CERTIFY] GPO guide copied to USB');
+        } catch (error) {
+            console.error('[CERTIFY] Error copying GPO guide:', error);
+            // Ne pas faire échouer la certification si la copie échoue
+        }
+
         res.json({
             success: true,
             message: 'Clé USB certifiée avec succès',
@@ -261,6 +274,36 @@ router.post('/verify', async (req, res) => {
             verification
         });
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Copier le guide GPO sur une clé USB
+router.post('/copy-gpo-guide', requireAuth, async (req, res) => {
+    try {
+        const { mount_point } = req.body;
+
+        if (!mount_point) {
+            return res.status(400).json({ error: 'mount_point requis' });
+        }
+
+        const fs = require('fs').promises;
+        const path = require('path');
+
+        // Chemin du guide GPO
+        const guidePath = path.join(__dirname, '../../CERTIFICATION-USB-GPO.md');
+        const destPath = path.join(mount_point, 'CERTIFICATION-USB-GPO.md');
+
+        // Copier le fichier
+        await fs.copyFile(guidePath, destPath);
+
+        res.json({
+            success: true,
+            message: 'Guide GPO copié sur la clé USB',
+            path: destPath
+        });
+    } catch (error) {
+        console.error('[CERT] Error copying GPO guide:', error);
         res.status(500).json({ error: error.message });
     }
 });
