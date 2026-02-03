@@ -165,10 +165,16 @@ app.get('/api/usb/connected', async (req, res) => {
 
         for (const devName of blockDevices) {
             try {
+                // Vérification USB via sysfs
                 const { stdout: usbCheck } = await execPromise(`readlink -f /sys/block/${devName} | grep -q usb && echo "usb" || echo "not-usb"`);
 
-                // SÉCURITÉ: N'accepter QUE les devices USB (pas de fallback sur sd[b-z])
-                if (usbCheck.trim() === 'usb') {
+                // Vérification supplémentaire via udevadm (plus fiable)
+                const { stdout: udevCheck } = await execPromise(
+                    `udevadm info --query=property --name=/dev/${devName} | grep -q "ID_BUS=usb" && echo "usb" || echo "not-usb"`
+                ).catch(() => ({ stdout: 'not-usb' }));
+
+                // SÉCURITÉ: N'accepter QUE si détecté comme USB par au moins une méthode
+                if (usbCheck.trim() === 'usb' || udevCheck.trim() === 'usb') {
                     let deviceData = null;
                     try {
                         const { stdout: lsblkOut } = await execPromise(`lsblk -J -o NAME,SIZE,TYPE,MOUNTPOINT,VENDOR,MODEL /dev/${devName} 2>/dev/null`);
