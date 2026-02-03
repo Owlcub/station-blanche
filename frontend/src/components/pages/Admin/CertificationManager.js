@@ -38,6 +38,7 @@ function CertificationManager() {
   useEffect(() => {
     loadConfig();
     loadDomains();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadConfig = async () => {
@@ -350,6 +351,31 @@ function CertificationManager() {
         </div>
       </div>
 
+      {/* GPO Documentation Download */}
+      <div className="cert-section" style={{background: '#fef3c7', borderLeft: '4px solid #f59e0b'}}>
+        <h3>📖 Guide de déploiement GPO Windows</h3>
+        <p style={{marginBottom: '15px'}}>
+          Téléchargez le guide complet pour déployer la validation de certificats USB sur vos postes Windows via GPO.
+        </p>
+        <button
+          className="btn-export"
+          onClick={() => {
+            const link = document.createElement('a');
+            link.href = '/CERTIFICATION-USB-GPO.md';
+            link.download = 'CERTIFICATION-USB-GPO.md';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showMessage('Guide GPO téléchargé !');
+          }}
+        >
+          <Download size={16} /> Télécharger le guide GPO (Markdown)
+        </button>
+        <p style={{fontSize: '12px', color: '#92400e', marginTop: '10px'}}>
+          Ce guide contient les scripts PowerShell prêts à l'emploi pour bloquer les clés USB non certifiées sur vos postes Windows.
+        </p>
+      </div>
+
       {/* Help Section */}
       <div className="cert-section help-section">
         <h3>ℹ️ Comment utiliser la certification USB ?</h3>
@@ -357,11 +383,7 @@ function CertificationManager() {
           <li><strong>Configurez vos domaines</strong> - Ajoutez les domaines d'entreprise autorisés</li>
           <li><strong>Scannez une clé USB</strong> - Utilisez le scanner USB normal</li>
           <li><strong>Certifiez la clé</strong> - Après un scan propre, cliquez sur "Certifier"</li>
-          <li><strong>Déploiement GPO</strong> - Utilisez une GPO Windows pour vérifier le certificat avant montage :
-            <code>
-              Test-Path "E:\.cyberbox-cert\certificate.json"
-            </code>
-          </li>
+          <li><strong>Déploiement GPO</strong> - Téléchargez le guide ci-dessus et suivez les instructions</li>
         </ol>
       </div>
     </div>
