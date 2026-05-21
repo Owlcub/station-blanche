@@ -10,6 +10,9 @@ __pycache__/
 /var/lib/cyberbox/
 *.sqlite
 *.db
+server/backend/.env
+server/backend/dump.rdb
+/backend/data/
 BOITIER-TOUT-EN-UN-10.md
 BUSINESS-MODEL.md
 DIY-KIOSK-COMPACT.md

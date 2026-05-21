@@ -1,0 +1,33 @@
+[Unit]
+Description=Station Blanche - Serveur Central
+Documentation=https://github.com/votre-org/station-blanche-server
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=stationblanche
+Group=stationblanche
+WorkingDirectory=/opt/station-blanche-server/backend
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/station-blanche-server/.env
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=stationblanche-server
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/station-blanche-server /var/lib/station-blanche-server
+
+# Resource limits
+LimitNOFILE=65535
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
