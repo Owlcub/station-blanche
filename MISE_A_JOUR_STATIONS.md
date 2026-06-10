@@ -95,7 +95,7 @@ systemctl restart lightdm
 ## Nouvelles fonctionnalités ajoutées
 
 ### Interface Admin (http://localhost:3000/admin)
-- 🔐 Login avec mot de passe : `CyberBox-Admin-2024`
+- 🔐 Login avec mot de passe (voir README pour les identifiants par défaut)
 - 📊 Statistiques système (RAM, CPU, disque)
 - 📝 Logs en temps réel
 - 🔄 Mise à jour depuis GitHub

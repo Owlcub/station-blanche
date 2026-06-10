@@ -344,11 +344,11 @@ sudo journalctl -u station-blanche-backend | grep CERTIFY
 ## 📞 Support
 
 Pour toute question :
-- **Documentation** : [Station Blanche GitHub](https://github.com/your-org/station-blanche)
-- **Issues** : [GitHub Issues](https://github.com/your-org/station-blanche/issues)
+- **Documentation** : [Station Blanche GitHub](https://github.com/Owlcub/station-blanche)
+- **Issues** : [GitHub Issues](https://github.com/Owlcub/station-blanche/issues)
 
 ---
 
-**Auteur** : CyberBox Station Blanche
+**Auteur** : Owlcub
 **Version** : 1.0
 **Date** : 2026-02-03

@@ -484,10 +484,8 @@ sudo systemctl status redis-server
 
 ## Support
 
-- Documentation : https://docs.station-blanche.com
-- Issues : https://github.com/votre-org/station-blanche-server/issues
-- Email : support@station-blanche.com
+- Issues : https://github.com/Owlcub/station-blanche/issues
 
 ## Licence
 
-Propriétaire - © 2024
+MIT License — Copyright (c) 2025 Owlcub

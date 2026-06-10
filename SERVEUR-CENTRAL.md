@@ -790,43 +790,6 @@ journalctl -u station-blanche-backend -f | grep MASTER-SYNC
 
 ---
 
-## Modèle Commercial
-
-### Offres adaptées
-
-| Offre | Prix/mois | Serveur Central | Support |
-|-------|-----------|-----------------|---------|
-| **Essai** | 19€/box | ❌ Mode standalone | Email |
-| **Pro** | 39€/box | ❌ Mode standalone | Tickets |
-| **Enterprise** | 89€/box + 299€ serveur | ✅ Serveur inclus | Prioritaire |
-| **Enterprise+** | 149€/box + 499€ serveur | ✅ + AD + Multi-sites | Dédié + On-site |
-
-### Exemples de pricing
-
-**Hôpital (20 boxes)** :
-- 20 boxes × 89€ = 1 780€/mois
-- 1 serveur central = 299€/mois
-- **Total : 2 079€/mois** (24 948€/an)
-
-**Collectivité (8 boxes)** :
-- 8 boxes × 89€ = 712€/mois
-- 1 serveur central = 299€/mois
-- **Total : 1 011€/mois** (12 132€/an)
-
-**Groupe industriel (50 boxes)** :
-- 50 boxes × 149€ = 7 450€/mois
-- 3 serveurs centraux (France, DE, UK) × 499€ = 1 497€/mois
-- **Total : 8 947€/mois** (107 364€/an)
-
-### Avantages clients
-
-- **ROI immédiat** : Évite incidents sécurité (coût moyen : 50 000€+)
-- **Conformité** : RGPD, ISO 27001, certifications sectorielles
-- **Efficacité** : Centralisation vs gestion manuelle de 50 stations
-- **Scalabilité** : Ajout de nouvelles stations en quelques minutes
-
----
-
 ## Roadmap Développement
 
 ### Phase 1 - MVP Serveur Central (8-10 semaines)
@@ -971,27 +934,11 @@ POST /api/v1/settings/webhooks
 
 ## Conclusion
 
-Le **Serveur Central Station Blanche** transforme une solution autonome en plateforme d'entreprise complète :
+Le **Serveur Central Station Blanche** transforme une solution autonome en plateforme multi-stations complète :
 
-✅ **Pour les clients** :
 - Gestion centralisée de dizaines de stations
 - Certificats USB valides sur tout le réseau
 - Visibilité temps-réel des menaces
-- Conformité automatisée
-
-✅ **Pour votre business** :
-- Montée en gamme vers l'enterprise (ARR élevé)
-- Lock-in fort (intégration AD = migration difficile)
-- Upsell naturel (standalone → serveur central)
-- Marges élevées (coût serveur minimal vs prix)
-
-✅ **Effort de développement raisonnable** :
-- Phase 1 MVP : 8-10 semaines
-- Réutilisation code existant (backend/frontend)
-- Stack technique maîtrisée (Node.js/React)
-
-**Prochaines étapes recommandées** :
-1. Valider concept avec 2-3 clients pilotes (mode standalone)
-2. Développer MVP serveur central (Phase 1)
-3. Beta test avec 1 client enterprise (hôpital ou collectivité)
-4. Itérer avant lancement commercial large
+- Conformité automatisée (RGPD, ISO 27001)
+- Stack technique : Node.js/React, PostgreSQL, Redis
+- Déploiement : Docker ou systemd + Nginx
