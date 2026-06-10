@@ -134,9 +134,51 @@ npm install && npm start
 
 ### Station autonome
 
-Panel admin accessible sur `/admin` :
-- **Mot de passe admin par défaut** : `CyberBox-Station-Admin` — à changer immédiatement après installation
+#### Première connexion
+
+Le panel admin est accessible sur `http://<ip-station>/admin` (ou `http://localhost/admin` en local).
+
+| Champ | Valeur par défaut |
+|---|---|
+| Identifiant | `admin-station` |
+| Mot de passe | `CyberBox-Station-Admin` |
+
+> **Changer le mot de passe immédiatement après installation.**
+> Dans le panel admin : section **Sécurité → Changer le mot de passe**.
+> Le nouveau mot de passe est stocké en bcrypt dans `/var/lib/cyberbox-station/admin_password.hash`.
+> Si ce fichier n'existe pas, le mot de passe par défaut s'applique.
+
 - **Connexion serveur central** : URL + clé API (optionnel, mode standalone sinon)
+
+#### Personnalisation logo et couleurs
+
+**Logo**
+
+Remplacer `frontend/public/logo-owlcub.png` par votre logo (PNG recommandé, format carré).
+Il est utilisé dans le header et sur l'écran d'accueil.
+
+**Couleurs**
+
+Les couleurs sont définies via des variables CSS dans `frontend/src/App.css` :
+
+```css
+:root {
+  --primary: #6366f1;       /* Couleur principale (boutons, accents) */
+  --primary-dark: #4f46e5;  /* Hover / états actifs */
+  --bg-dark: #0f172a;       /* Fond principal */
+  --bg-card: #1e293b;       /* Fond des cartes */
+  --text: #f8fafc;          /* Texte principal */
+  --success: #22c55e;       /* Scan propre / succès */
+  --danger: #ef4444;        /* Menace détectée */
+  --warning: #f59e0b;       /* Avertissement */
+}
+```
+
+Après modification, rebuilder le frontend :
+```bash
+cd frontend && npm run build
+sudo systemctl restart station-blanche-frontend
+```
 
 ### Serveur central
 

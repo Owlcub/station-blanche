@@ -64,7 +64,7 @@ function App() {
         <footer className="app-footer">
           <p>Station Blanche v1.0 - Analyse de sécurité USB</p>
           <p style={{ fontSize: '0.75rem', marginTop: '0.5rem', opacity: 0.8 }}>
-            Développé par <strong>CupaDev</strong>
+            Built with love by <strong>Owlcub</strong>
           </p>
         </footer>
 
